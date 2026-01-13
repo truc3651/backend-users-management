@@ -1,0 +1,2 @@
+ALTER TABLE users.t_friend_requests
+DROP CONSTRAINT unique_friend_request;
