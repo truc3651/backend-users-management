@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: backend-users-management
+    name: users-management
   datasource:
     url: jdbc:postgresql://localhost:5432/users
     username: postgres
@@ -27,10 +27,10 @@ spring:
       host: localhost
       port: 6379
   neo4j:
-    uri: bolt://localhost:7687
+    uri: neo4j://127.0.0.1:7687
     authentication:
       username: neo4j
-      password: neo4j
+      password: neo4j@strong
   cache:
     type: redis
     redis:
@@ -54,8 +54,8 @@ spring:
 org:
   neo4j:
     migrations:
-      enabled: true
-      locations-to-scan: classpath:neo4j/migrations
+      enabled: false
+      locations-to-scan: classpath:neo4j.migrations
       transaction-mode: per-migration
 
 jwt:

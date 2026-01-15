@@ -1,1 +1,3 @@
 rootProject.name = 'backend-users-management'
+
+includeBuild('../backend-core')
