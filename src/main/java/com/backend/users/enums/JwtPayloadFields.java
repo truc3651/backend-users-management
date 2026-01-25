@@ -4,11 +4,12 @@ import lombok.Getter;
 
 @Getter
 public enum JwtPayloadFields {
-    EMAIL("email"),
-    ID("id");
+  EMAIL("email"),
+  ID("id");
 
-    private final String name;
-    JwtPayloadFields(String name) {
-        this.name = name;
-    }
+  private final String name;
+
+  JwtPayloadFields(String name) {
+    this.name = name;
+  }
 }

@@ -14,12 +14,9 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 public class Neo4jConfig {
 
-    @Bean("neo4jTransactionManager")
-    public PlatformTransactionManager neo4jTransactionManager(
-            Driver driver,
-            DatabaseSelectionProvider databaseSelectionProvider) {
-        return new Neo4jTransactionManager(driver, databaseSelectionProvider);
-    }
+  @Bean("neo4jTransactionManager")
+  public PlatformTransactionManager neo4jTransactionManager(
+      Driver driver, DatabaseSelectionProvider databaseSelectionProvider) {
+    return new Neo4jTransactionManager(driver, databaseSelectionProvider);
+  }
 }
-
-

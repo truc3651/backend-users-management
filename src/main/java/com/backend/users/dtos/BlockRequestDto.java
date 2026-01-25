@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BlockRequestDto {
-    @NotNull
-    private Long userId;
-    private String reason;
+  @NotNull private Long userId;
+  private String reason;
 }

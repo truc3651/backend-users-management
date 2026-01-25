@@ -5,6 +5,5 @@ import lombok.Data;
 
 @Data
 public class SendFriendRequestDto {
-    @NotNull
-    private Long addresseeId;
+  @NotNull private Long addresseeId;
 }

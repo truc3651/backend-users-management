@@ -10,7 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChangePasswordRequestDto {
-    @NotBlank
-    @Size
-    private String newPassword;
+  @NotBlank @Size private String newPassword;
 }

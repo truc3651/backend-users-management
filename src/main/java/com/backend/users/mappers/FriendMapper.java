@@ -1,39 +1,40 @@
 package com.backend.users.mappers;
 
-import com.backend.core.web.page.Page;
-import com.backend.users.dtos.UserDto;
-import com.backend.users.dtos.FriendListResponseDto;
-import com.backend.users.dtos.FriendRequestResponseDto;
-import com.backend.users.entities.FriendRequestEntity;
-import com.backend.users.graph.UserNode;
+import java.util.List;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import java.util.List;
+import com.backend.core.web.page.Page;
+import com.backend.users.dtos.FriendListResponseDto;
+import com.backend.users.dtos.FriendRequestResponseDto;
+import com.backend.users.dtos.UserDto;
+import com.backend.users.entities.FriendRequestEntity;
+import com.backend.users.graph.UserNode;
 
 @Mapper(componentModel = "spring")
 public interface FriendMapper {
-    @Mapping(source = "addressee.id", target = "addresseeId")
-    @Mapping(source = "addressee.email", target = "addresseeEmail")
-    FriendRequestResponseDto toFriendRequestResponseDto(FriendRequestEntity entity);
+  @Mapping(source = "addressee.id", target = "addresseeId")
+  @Mapping(source = "addressee.email", target = "addresseeEmail")
+  FriendRequestResponseDto toFriendRequestResponseDto(FriendRequestEntity entity);
 
-    List<FriendRequestResponseDto> toFriendRequestResponseDtoList(List<FriendRequestEntity> entities);
+  List<FriendRequestResponseDto> toFriendRequestResponseDtoList(List<FriendRequestEntity> entities);
 
-    UserDto toUserDto(UserNode userNode);
+  UserDto toUserDto(UserNode userNode);
 
-    List<UserDto> toUserDtoList(List<UserNode> userNodes);
+  List<UserDto> toUserDtoList(List<UserNode> userNodes);
 
-    default Page<UserDto> toUserDtoPage(org.springframework.data.domain.Page<UserNode> page) {
-        return Page.<UserDto>builder()
-                .items(toUserDtoList(page.getContent()))
-                .totalElements(page.getTotalElements())
-                .build();
-    }
+  default Page<UserDto> toUserDtoPage(org.springframework.data.domain.Page<UserNode> page) {
+    return Page.<UserDto>builder()
+        .items(toUserDtoList(page.getContent()))
+        .totalElements(page.getTotalElements())
+        .build();
+  }
 
-    default FriendListResponseDto fromUserNodeEntityToDto(List<UserNode> friends) {
-        FriendListResponseDto dto = new FriendListResponseDto();
-        dto.setFriends(toUserDtoList(friends));
-        dto.setCount((long) friends.size());
-        return dto;
-    }
+  default FriendListResponseDto fromUserNodeEntityToDto(List<UserNode> friends) {
+    FriendListResponseDto dto = new FriendListResponseDto();
+    dto.setFriends(toUserDtoList(friends));
+    dto.setCount((long) friends.size());
+    return dto;
+  }
 }

@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResetPasswordRequestDto {
-    @NotBlank
-    private String token;
+  @NotBlank private String token;
 
-    @NotBlank
-    private String newPassword;
+  @NotBlank private String newPassword;
 }

@@ -1,18 +1,20 @@
 package com.backend.users.entities;
 
-import com.backend.users.enums.Role;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.OffsetDateTime;
-import java.util.Collection;
-import java.util.List;
+import com.backend.users.enums.Role;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "t_users")
@@ -21,47 +23,46 @@ import java.util.List;
 @AllArgsConstructor
 @SequenceGenerator(name = "user_sequence", sequenceName = "users.q_users_id", allocationSize = 10)
 public class UserEntity implements UserDetails {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_sequence")
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_sequence")
+  private Long id;
 
-    private String email;
-    private String password;
-    @Enumerated(EnumType.STRING)
-    private Role role;
+  private String email;
+  private String password;
 
-    @CreationTimestamp
-    private OffsetDateTime createdAt;
-    @UpdateTimestamp
-    private OffsetDateTime updatedAt;
+  @Enumerated(EnumType.STRING)
+  private Role role;
 
-    @Override
-    public String getUsername() {
-        return email;
-    }
+  @CreationTimestamp private OffsetDateTime createdAt;
+  @UpdateTimestamp private OffsetDateTime updatedAt;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
-    }
+  @Override
+  public String getUsername() {
+    return email;
+  }
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+  @Override
+  public Collection<? extends GrantedAuthority> getAuthorities() {
+    return List.of();
+  }
 
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+  @Override
+  public boolean isAccountNonExpired() {
+    return true;
+  }
 
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+  @Override
+  public boolean isAccountNonLocked() {
+    return true;
+  }
 
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
+  @Override
+  public boolean isCredentialsNonExpired() {
+    return true;
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return true;
+  }
 }

@@ -1,18 +1,20 @@
 package com.backend.users.repositories;
 
-import com.backend.users.entities.FriendRequestEntity;
-import com.backend.users.enums.FriendRequestStatus;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.backend.users.entities.FriendRequestEntity;
+import com.backend.users.enums.FriendRequestStatus;
 
 @Repository
 public interface FriendRequestRepository extends JpaRepository<FriendRequestEntity, Long> {
-    @Query("""
+  @Query(
+      """
         SELECT CASE WHEN COUNT(fr) > 0 THEN true ELSE false END
         FROM FriendRequestEntity fr
         WHERE (
@@ -22,11 +24,11 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequestEnti
         )
         AND fr.status = com.backend.users.enums.FriendRequestStatus.ACCEPTED
     """)
-    boolean areFriends(
-            @Param("requesterId") Long requesterId,
-            @Param("addresseeId") Long addresseeId);
+  boolean areFriends(
+      @Param("requesterId") Long requesterId, @Param("addresseeId") Long addresseeId);
 
-    @Query("""
+  @Query(
+      """
         SELECT fr FROM FriendRequestEntity fr
         WHERE fr.status = :status
         AND (
@@ -35,9 +37,12 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequestEnti
             (fr.requester.id = :addresseeId AND fr.addressee.id = :requesterId)
         )
     """)
-    Optional<FriendRequestEntity> findByIdAndStatus(Long requesterId, Long addresseeId, FriendRequestStatus status);
+  Optional<FriendRequestEntity> findByIdAndStatus(
+      Long requesterId, Long addresseeId, FriendRequestStatus status);
 
-    List<FriendRequestEntity> findByAddresseeIdAndStatus(Long addresseeId, FriendRequestStatus status);
+  List<FriendRequestEntity> findByAddresseeIdAndStatus(
+      Long addresseeId, FriendRequestStatus status);
 
-    List<FriendRequestEntity> findByRequesterIdAndStatus(Long requesterId, FriendRequestStatus status);
+  List<FriendRequestEntity> findByRequesterIdAndStatus(
+      Long requesterId, FriendRequestStatus status);
 }

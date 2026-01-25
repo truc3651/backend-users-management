@@ -8,13 +8,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SocialStatsDto {
-    private Long userId;
-    private long friendsCount;
-    private long followersCount;
-    private long followingCount;
-    private boolean isFollowingYou;
-    private boolean isFollowedByYou;
-    private boolean isFriend;
-    private boolean isBlocked;
-    private boolean isRestricted;
+  private Long userId;
+  private long friendsCount;
+  private long followersCount;
+  private long followingCount;
+  private boolean isFollowingYou;
+  private boolean isFollowedByYou;
+  private boolean isFriend;
+  private boolean isBlocked;
+  private boolean isRestricted;
 }

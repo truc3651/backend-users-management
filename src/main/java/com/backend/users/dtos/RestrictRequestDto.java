@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RestrictRequestDto {
-    @NotNull(message = "User ID to restrict is required")
-    private Long userId;
+  @NotNull(message = "User ID to restrict is required")
+  private Long userId;
 }

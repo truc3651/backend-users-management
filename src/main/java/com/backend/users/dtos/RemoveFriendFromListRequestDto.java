@@ -10,8 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RemoveFriendFromListRequestDto {
-    @NotNull
-    private Long friendId;
-    @NotBlank
-    private String listName;
+  @NotNull private Long friendId;
+  @NotBlank private String listName;
 }

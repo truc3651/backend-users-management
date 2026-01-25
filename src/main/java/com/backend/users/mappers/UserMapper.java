@@ -7,5 +7,5 @@ import com.backend.users.entities.UserEntity;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
-    UserDto toDto(UserEntity user);
+  UserDto toDto(UserEntity user);
 }

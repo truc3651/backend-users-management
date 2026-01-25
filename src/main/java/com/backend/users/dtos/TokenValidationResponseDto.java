@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TokenValidationResponseDto {
-    private boolean valid;
+  private boolean valid;
 }
