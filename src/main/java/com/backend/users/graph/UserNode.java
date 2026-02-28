@@ -31,9 +31,6 @@ public class UserNode {
   @Relationship(type = "BLOCKS", direction = OUTGOING)
   private List<BlocksRelationship> blocked = new ArrayList<>();
 
-  @Relationship(type = "IN_LIST", direction = OUTGOING)
-  private List<FriendListRelationship> friendLists = new ArrayList<>();
-
   public UserNode(Long id, String email) {
     this.id = id;
     this.email = email;

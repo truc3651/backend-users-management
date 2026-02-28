@@ -3,10 +3,9 @@ package com.backend.users.mappers;
 import java.util.List;
 
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.springframework.data.domain.Pageable;
 
 import com.backend.core.web.page.Page;
-import com.backend.users.dtos.FriendListResponseDto;
 import com.backend.users.dtos.FriendRequestResponseDto;
 import com.backend.users.dtos.UserDto;
 import com.backend.users.entities.FriendRequestEntity;
@@ -14,27 +13,20 @@ import com.backend.users.graph.UserNode;
 
 @Mapper(componentModel = "spring")
 public interface FriendMapper {
-  @Mapping(source = "addressee.id", target = "addresseeId")
-  @Mapping(source = "addressee.email", target = "addresseeEmail")
-  FriendRequestResponseDto toFriendRequestResponseDto(FriendRequestEntity entity);
 
-  List<FriendRequestResponseDto> toFriendRequestResponseDtoList(List<FriendRequestEntity> entities);
+  default FriendRequestResponseDto toFriendRequestResponseDto(FriendRequestEntity entity) {
+    FriendRequestResponseDto dto = new FriendRequestResponseDto();
+    dto.setId(entity.getId());
+    dto.setRequesterId(entity.getRequesterId());
+    dto.setAddresseeId(entity.getAddresseeId());
+    dto.setStatus(entity.getStatus());
+    dto.setCreatedAt(entity.getCreatedAt());
+    return dto;
+  }
 
   UserDto toUserDto(UserNode userNode);
 
-  List<UserDto> toUserDtoList(List<UserNode> userNodes);
-
-  default Page<UserDto> toUserDtoPage(org.springframework.data.domain.Page<UserNode> page) {
-    return Page.<UserDto>builder()
-        .items(toUserDtoList(page.getContent()))
-        .totalElements(page.getTotalElements())
-        .build();
-  }
-
-  default FriendListResponseDto fromUserNodeEntityToDto(List<UserNode> friends) {
-    FriendListResponseDto dto = new FriendListResponseDto();
-    dto.setFriends(toUserDtoList(friends));
-    dto.setCount((long) friends.size());
-    return dto;
+  default Page<UserDto> toUserDtoPage(List<UserDto> items, Long totalElements, Pageable pageable) {
+    return Page.<UserDto>builder().items(items).totalElements(totalElements).build();
   }
 }

@@ -1,18 +1,17 @@
 package com.backend.users.services;
 
 import java.time.OffsetDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.backend.users.entities.PasswordResetTokenEntity;
 import com.backend.users.entities.UserEntity;
 import com.backend.users.repositories.PasswordResetTokenRepository;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -22,42 +21,33 @@ public class PasswordResetService {
   @Value("${password.reset-token-expiration:900000}")
   private Long resetTokenExpiration;
 
-  public PasswordResetTokenEntity createPasswordResetToken(UserEntity user) {
+  public Mono<PasswordResetTokenEntity> createPasswordResetToken(UserEntity user) {
     PasswordResetTokenEntity token = new PasswordResetTokenEntity();
     token.setToken(UUID.randomUUID().toString());
-    token.setUser(user);
+    token.setUserId(user.getId());
     token.setExpiresAt(OffsetDateTime.now().plusSeconds(resetTokenExpiration / 1000));
     token.setUsed(false);
+    token.setCreatedAt(OffsetDateTime.now());
 
     return passwordResetTokenRepository.save(token);
   }
 
-  public Optional<PasswordResetTokenEntity> validatePasswordResetToken(String token) {
-    Optional<PasswordResetTokenEntity> resetToken = passwordResetTokenRepository.findByToken(token);
-
-    if (resetToken.isPresent()) {
-      PasswordResetTokenEntity rt = resetToken.get();
-      if (rt.getExpiresAt().isBefore(OffsetDateTime.now()) || rt.isUsed()) {
-        return Optional.empty();
-      }
-    }
-
-    return resetToken;
+  public Mono<PasswordResetTokenEntity> validatePasswordResetToken(String token) {
+    return passwordResetTokenRepository
+        .findByToken(token)
+        .filter(rt -> !rt.getExpiresAt().isBefore(OffsetDateTime.now()) && !rt.isUsed());
   }
 
-  @Transactional
-  public void markTokenAsUsed(PasswordResetTokenEntity token) {
+  public Mono<PasswordResetTokenEntity> markTokenAsUsed(PasswordResetTokenEntity token) {
     token.setUsed(true);
-    passwordResetTokenRepository.save(token);
+    return passwordResetTokenRepository.save(token);
   }
 
-  @Transactional
-  public void deleteUserPasswordResetTokens(UserEntity user) {
-    passwordResetTokenRepository.deleteByUser(user);
+  public Mono<Void> deleteUserPasswordResetTokens(Long userId) {
+    return passwordResetTokenRepository.deleteByUserId(userId);
   }
 
-  @Transactional
-  public void cleanupExpiredTokens() {
-    passwordResetTokenRepository.deleteByExpiresAtBefore(OffsetDateTime.now());
+  public Mono<Void> cleanupExpiredTokens() {
+    return passwordResetTokenRepository.deleteByExpiresAtBefore(OffsetDateTime.now());
   }
 }

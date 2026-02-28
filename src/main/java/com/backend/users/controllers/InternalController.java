@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.backend.users.services.RefreshTokenService;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/users/internal")
@@ -15,7 +16,7 @@ public class InternalController {
   private final RefreshTokenService refreshTokenService;
 
   @PostMapping("/cleanup/refresh-tokens")
-  public void cleanupRefreshTokens() {
-    refreshTokenService.cleanupExpiredTokens();
+  public Mono<Void> cleanupRefreshTokens() {
+    return refreshTokenService.cleanupExpiredTokens();
   }
 }

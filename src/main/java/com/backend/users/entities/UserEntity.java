@@ -4,37 +4,40 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.backend.users.enums.Role;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "t_users")
+@Table("t_users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SequenceGenerator(name = "user_sequence", sequenceName = "users.q_users_id", allocationSize = 10)
 public class UserEntity implements UserDetails {
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_sequence")
-  private Long id;
+  @Id private Long id;
 
   private String email;
   private String password;
 
-  @Enumerated(EnumType.STRING)
+  @Column("role")
   private Role role;
 
-  @CreationTimestamp private OffsetDateTime createdAt;
-  @UpdateTimestamp private OffsetDateTime updatedAt;
+  @CreatedDate
+  @Column("created_at")
+  private OffsetDateTime createdAt;
+
+  @LastModifiedDate
+  @Column("updated_at")
+  private OffsetDateTime updatedAt;
 
   @Override
   public String getUsername() {

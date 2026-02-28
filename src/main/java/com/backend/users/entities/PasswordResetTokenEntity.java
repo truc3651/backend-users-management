@@ -2,34 +2,33 @@ package com.backend.users.entities;
 
 import java.time.OffsetDateTime;
 
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "t_password_reset_tokens")
+@Table("t_password_reset_tokens")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SequenceGenerator(
-    name = "password_reset_token_sequence",
-    sequenceName = "users.q_password_reset_tokens_id",
-    allocationSize = 10)
 public class PasswordResetTokenEntity {
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "password_reset_token_sequence")
-  private Long id;
+  @Id private Long id;
 
   private String token;
+
+  @Column("expires_at")
   private OffsetDateTime expiresAt;
+
   private boolean used;
 
-  @ManyToOne
-  @JoinColumn(name = "user_id")
-  private UserEntity user;
+  @Column("user_id")
+  private Long userId;
 
-  @CreationTimestamp private OffsetDateTime createdAt;
+  @CreatedDate
+  @Column("created_at")
+  private OffsetDateTime createdAt;
 }

@@ -1,5 +1,7 @@
 package com.backend.users.dtos;
 
+import java.time.OffsetDateTime;
+
 import com.backend.users.enums.FriendRequestStatus;
 
 import lombok.AllArgsConstructor;
@@ -11,7 +13,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FriendRequestResponseDto {
   private Long id;
+  private Long requesterId;
   private Long addresseeId;
-  private String addresseeEmail;
   private FriendRequestStatus status;
+  private OffsetDateTime createdAt;
 }

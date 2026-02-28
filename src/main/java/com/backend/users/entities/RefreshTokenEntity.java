@@ -2,30 +2,31 @@ package com.backend.users.entities;
 
 import java.time.OffsetDateTime;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "t_refresh_tokens")
+@Table("t_refresh_tokens")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SequenceGenerator(
-    name = "refresh_token_sequence",
-    sequenceName = "users.q_refresh_tokens_id",
-    allocationSize = 10)
 public class RefreshTokenEntity {
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "refresh_token_sequence")
-  private Long id;
+  @Id private Long id;
 
   private String token;
+
+  @Column("expires_at")
   private OffsetDateTime expiresAt;
+
+  @CreatedDate
+  @Column("created_at")
   private OffsetDateTime createdAt;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id")
-  private UserEntity user;
+  @Column("user_id")
+  private Long userId;
 }

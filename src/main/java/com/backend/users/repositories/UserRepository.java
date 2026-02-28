@@ -1,13 +1,13 @@
 package com.backend.users.repositories;
 
-import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 
 import com.backend.users.entities.UserEntity;
 
-public interface UserRepository extends JpaRepository<UserEntity, Long> {
-  Optional<UserEntity> findByEmail(String email);
+import reactor.core.publisher.Mono;
 
-  boolean existsByEmail(String email);
+public interface UserRepository extends R2dbcRepository<UserEntity, Long> {
+  Mono<UserEntity> findByEmail(String email);
+
+  Mono<Boolean> existsByEmail(String email);
 }

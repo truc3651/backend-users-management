@@ -1,48 +1,50 @@
 package com.backend.users.repositories;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.backend.users.entities.FriendRequestEntity;
 import com.backend.users.enums.FriendRequestStatus;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 @Repository
-public interface FriendRequestRepository extends JpaRepository<FriendRequestEntity, Long> {
+public interface FriendRequestRepository extends R2dbcRepository<FriendRequestEntity, Long> {
   @Query(
       """
-        SELECT CASE WHEN COUNT(fr) > 0 THEN true ELSE false END
-        FROM FriendRequestEntity fr
+        SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END
+        FROM t_friend_requests fr
         WHERE (
-            (fr.requester.id = :requesterId AND fr.addressee.id = :addresseeId)
+            (fr.requester_id = :requesterId AND fr.addressee_id = :addresseeId)
             OR
-            (fr.requester.id = :addresseeId AND fr.addressee.id = :requesterId)
+            (fr.requester_id = :addresseeId AND fr.addressee_id = :requesterId)
         )
-        AND fr.status = com.backend.users.enums.FriendRequestStatus.ACCEPTED
+        AND fr.status = 'ACCEPTED'
     """)
-  boolean areFriends(
+  Mono<Boolean> areFriends(
       @Param("requesterId") Long requesterId, @Param("addresseeId") Long addresseeId);
 
   @Query(
       """
-        SELECT fr FROM FriendRequestEntity fr
+        SELECT * FROM t_friend_requests fr
         WHERE fr.status = :status
         AND (
-            (fr.requester.id = :requesterId AND fr.addressee.id = :addresseeId)
+            (fr.requester_id = :requesterId AND fr.addressee_id = :addresseeId)
             OR
-            (fr.requester.id = :addresseeId AND fr.addressee.id = :requesterId)
+            (fr.requester_id = :addresseeId AND fr.addressee_id = :requesterId)
         )
     """)
-  Optional<FriendRequestEntity> findByIdAndStatus(
-      Long requesterId, Long addresseeId, FriendRequestStatus status);
+  Mono<FriendRequestEntity> findByIdAndStatus(
+      @Param("requesterId") Long requesterId,
+      @Param("addresseeId") Long addresseeId,
+      @Param("status") String status);
 
-  List<FriendRequestEntity> findByAddresseeIdAndStatus(
+  Flux<FriendRequestEntity> findByAddresseeIdAndStatus(
       Long addresseeId, FriendRequestStatus status);
 
-  List<FriendRequestEntity> findByRequesterIdAndStatus(
+  Flux<FriendRequestEntity> findByRequesterIdAndStatus(
       Long requesterId, FriendRequestStatus status);
 }
