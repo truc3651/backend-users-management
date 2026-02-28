@@ -30,7 +30,7 @@ repositories {
 
 dependencies {
     // Backend Core
-    implementation 'com.truc2001:backend-core:${backendCoreVersion}'
+    implementation 'com.truc2001:backend-core:1.0.11'
 
     // Spring Boot Starter (WebFlux - reactive)
     implementation 'org.springframework.boot:spring-boot-starter'
