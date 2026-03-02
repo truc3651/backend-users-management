@@ -41,6 +41,24 @@ kafka-properties:
   follow-topic-name: follow
   block-topic-name: block
 
+web:
+  security:
+    open-paths:
+      - pattern: /v1/api/auth/**
+      - pattern: /api/internal/**
+
+app:
+  caches:
+    user:
+      key-prefix: "user:"
+      ttl: 10m
+    friends:
+      key-prefix: "friends:"
+      ttl: 15m
+    suggestions:
+      key-prefix: "suggestions:"
+      ttl: 30m
+
 jwt:
   secret: your-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm-please-change-this
   access-token-expiration: 900000      # 15 minutes
@@ -48,9 +66,3 @@ jwt:
 
 password:
   reset-token-expiration: 900000  # 15 minutes
-
-web:
-  security:
-    open-paths:
-      - pattern: /v1/api/auth/**
-      - pattern: /api/internal/**

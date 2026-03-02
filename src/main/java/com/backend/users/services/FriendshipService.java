@@ -1,11 +1,15 @@
 package com.backend.users.services;
 
+import static com.backend.users.cache.CacheKeyGenerator.forId;
 import static com.backend.users.utils.Constants.FRIEND_REQUEST_RESOURCE_NAME;
 import static com.backend.users.utils.Constants.USER_RESOURCE_NAME;
+
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.backend.core.cache.ReactiveCacheTemplate;
 import com.backend.core.exceptions.ForbiddenException;
 import com.backend.core.exceptions.ResourceNotFoundException;
 import com.backend.core.exceptions.ValidationException;
@@ -32,6 +36,9 @@ public class FriendshipService {
   private final UserRepository userRepository;
   private final UserNodeRepository userNodeRepository;
   private final FriendMapper friendMapper;
+
+  private final ReactiveCacheTemplate<List<UserDto>> friendsCache;
+  private final ReactiveCacheTemplate<List<UserDto>> suggestionsCache;
 
   @Transactional
   public Mono<Void> sendFriendRequest(UserEntity currentUser, Long addresseeId) {
@@ -64,9 +71,11 @@ public class FriendshipService {
             friendRequest -> {
               validateDefaultOperations(friendRequest, currentUserId);
               friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
-              return friendRequestRepository.save(friendRequest);
-            })
-        .then();
+              return friendRequestRepository
+                  .save(friendRequest)
+                  .then(evictFriendsCaches(friendRequest.getRequesterId(), currentUserId))
+                  .then(evictSuggestionsCaches(friendRequest.getRequesterId(), currentUserId));
+            });
   }
 
   @Transactional
@@ -110,11 +119,37 @@ public class FriendshipService {
   }
 
   public Flux<UserDto> getFriends(Long userId) {
-    return userNodeRepository.findFriendsByUserId(userId).map(friendMapper::toUserDto);
+    return friendsCache
+        .get(forId(userId), this::loadFriendsFromNeo4j)
+        .flatMapMany(Flux::fromIterable);
   }
 
   public Flux<UserDto> getFriendSuggestions(Long userId) {
-    return userNodeRepository.findFriendsOfFriends(userId, 10).map(friendMapper::toUserDto);
+    return suggestionsCache
+        .get(forId(userId), this::loadSuggestionsFromNeo4j)
+        .flatMapMany(Flux::fromIterable);
+  }
+
+  private Mono<List<UserDto>> loadFriendsFromNeo4j(String id) {
+    return userNodeRepository
+        .findFriendsByUserId(Long.valueOf(id))
+        .map(friendMapper::toUserDto)
+        .collectList();
+  }
+
+  private Mono<List<UserDto>> loadSuggestionsFromNeo4j(String id) {
+    return userNodeRepository
+        .findFriendsOfFriends(Long.valueOf(id), 10)
+        .map(friendMapper::toUserDto)
+        .collectList();
+  }
+
+  private Mono<Void> evictFriendsCaches(Long userId1, Long userId2) {
+    return friendsCache.evict(forId(userId1)).then(friendsCache.evict(forId(userId2)));
+  }
+
+  private Mono<Void> evictSuggestionsCaches(Long userId1, Long userId2) {
+    return suggestionsCache.evict(forId(userId1)).then(suggestionsCache.evict(forId(userId2)));
   }
 
   private Mono<FriendRequestEntity> findFriendRequestById(Long id) {
