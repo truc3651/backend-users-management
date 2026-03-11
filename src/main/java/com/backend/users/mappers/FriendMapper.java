@@ -13,20 +13,11 @@ import com.backend.users.graph.UserNode;
 
 @Mapper(componentModel = "spring")
 public interface FriendMapper {
-
-  default FriendRequestResponseDto toFriendRequestResponseDto(FriendRequestEntity entity) {
-    FriendRequestResponseDto dto = new FriendRequestResponseDto();
-    dto.setId(entity.getId());
-    dto.setRequesterId(entity.getRequesterId());
-    dto.setAddresseeId(entity.getAddresseeId());
-    dto.setStatus(entity.getStatus());
-    dto.setCreatedAt(entity.getCreatedAt());
-    return dto;
-  }
+  FriendRequestResponseDto toFriendRequestResponseDto(FriendRequestEntity entity);
 
   UserDto toUserDto(UserNode userNode);
 
-  default Page<UserDto> toUserDtoPage(List<UserDto> items, Long totalElements, Pageable pageable) {
+  default Page<UserDto> toUserDtoPage(List<UserDto> items, Long totalElements) {
     return Page.<UserDto>builder().items(items).totalElements(totalElements).build();
   }
 }

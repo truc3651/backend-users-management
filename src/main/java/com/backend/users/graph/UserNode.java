@@ -19,7 +19,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UserNode {
   @Id private Long id;
-
   private String email;
 
   @Relationship(type = "FRIENDS_WITH", direction = OUTGOING)
@@ -30,9 +29,4 @@ public class UserNode {
 
   @Relationship(type = "BLOCKS", direction = OUTGOING)
   private List<BlocksRelationship> blocked = new ArrayList<>();
-
-  public UserNode(Long id, String email) {
-    this.id = id;
-    this.email = email;
-  }
 }

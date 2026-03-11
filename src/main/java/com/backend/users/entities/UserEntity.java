@@ -7,12 +7,9 @@ import java.util.List;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
-import com.backend.users.enums.Role;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,19 +21,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserEntity implements UserDetails {
   @Id private Long id;
-
   private String email;
   private String password;
 
-  @Column("role")
-  private Role role;
-
   @CreatedDate
-  @Column("created_at")
   private OffsetDateTime createdAt;
 
   @LastModifiedDate
-  @Column("updated_at")
   private OffsetDateTime updatedAt;
 
   @Override

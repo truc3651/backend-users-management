@@ -4,6 +4,7 @@ import static com.backend.users.neo4j.Neo4jDriverType.READER;
 import static com.backend.users.neo4j.Neo4jDriverType.WRITER;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -20,26 +21,20 @@ import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.types.TypeSystem;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@AllArgsConstructor
 public class ReadWriteReplicaRoutingNeo4jDriver implements Driver {
   private final Map<String, Driver> drivers;
   private final Driver defaultDriver;
-
-  public ReadWriteReplicaRoutingNeo4jDriver(Map<String, Driver> drivers, Driver defaultDriver) {
-    this.drivers = drivers;
-    this.defaultDriver = defaultDriver;
-  }
 
   private Driver getCurrentDriver() {
     boolean isReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
     String driverKey = isReadOnly ? READER : WRITER;
     Driver driver = drivers.get(driverKey);
-
-    log.debug("Routing to {} driver (read-only: {})", driverKey, isReadOnly);
-
-    return driver != null ? driver : defaultDriver;
+    return Optional.ofNullable(driver).orElse(defaultDriver);
   }
 
   @Override

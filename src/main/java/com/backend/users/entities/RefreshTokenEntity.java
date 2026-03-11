@@ -16,17 +16,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RefreshTokenEntity {
-  @Id private Long id;
-
-  private String token;
-
-  @Column("expires_at")
+  @Id private String token;
+  private Long userId;
   private OffsetDateTime expiresAt;
 
   @CreatedDate
-  @Column("created_at")
   private OffsetDateTime createdAt;
-
-  @Column("user_id")
-  private Long userId;
 }

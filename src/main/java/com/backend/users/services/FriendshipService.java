@@ -1,6 +1,6 @@
 package com.backend.users.services;
 
-import static com.backend.users.cache.CacheKeyGenerator.forId;
+import static com.backend.users.utils.Constants.DEFAULT_PAGINATION;
 import static com.backend.users.utils.Constants.FRIEND_REQUEST_RESOURCE_NAME;
 import static com.backend.users.utils.Constants.USER_RESOURCE_NAME;
 
@@ -14,6 +14,7 @@ import com.backend.core.exceptions.ForbiddenException;
 import com.backend.core.exceptions.ResourceNotFoundException;
 import com.backend.core.exceptions.ValidationException;
 import com.backend.users.dtos.FriendRequestResponseDto;
+import com.backend.users.dtos.SendFriendRequestDto;
 import com.backend.users.dtos.UserDto;
 import com.backend.users.entities.FriendRequestEntity;
 import com.backend.users.entities.UserEntity;
@@ -41,8 +42,9 @@ public class FriendshipService {
   private final ReactiveCacheTemplate<List<UserDto>> suggestionsCache;
 
   @Transactional
-  public Mono<Void> sendFriendRequest(UserEntity currentUser, Long addresseeId) {
+  public Mono<Void> sendFriendRequest(UserEntity currentUser, SendFriendRequestDto request) {
     Long requesterId = currentUser.getId();
+    Long addresseeId = request.getAddresseeId();
 
     return userRepository
         .findById(addresseeId)
@@ -68,13 +70,15 @@ public class FriendshipService {
 
     return findFriendRequestById(requestId)
         .flatMap(
-            friendRequest -> {
-              validateDefaultOperations(friendRequest, currentUserId);
-              friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
+            fr -> {
+              validateDefaultOperations(fr, currentUserId);
+              fr.setStatus(FriendRequestStatus.ACCEPTED);
               return friendRequestRepository
-                  .save(friendRequest)
-                  .then(evictFriendsCaches(friendRequest.getRequesterId(), currentUserId))
-                  .then(evictSuggestionsCaches(friendRequest.getRequesterId(), currentUserId));
+                  .save(fr)
+                  .then(Mono.when(
+                          evictFriendsCaches(fr.getRequesterId(), currentUserId),
+                          evictSuggestionsCaches(fr.getRequesterId(), currentUserId)
+                  ));
             });
   }
 
@@ -84,10 +88,10 @@ public class FriendshipService {
 
     return findFriendRequestById(requestId)
         .flatMap(
-            friendRequest -> {
-              validateDefaultOperations(friendRequest, currentUserId);
-              friendRequest.setStatus(FriendRequestStatus.REJECTED);
-              return friendRequestRepository.save(friendRequest);
+            fr -> {
+              validateDefaultOperations(fr, currentUserId);
+              fr.setStatus(FriendRequestStatus.REJECTED);
+              return friendRequestRepository.save(fr);
             })
         .then();
   }
@@ -98,10 +102,10 @@ public class FriendshipService {
 
     return findFriendRequestById(requestId)
         .flatMap(
-            friendRequest -> {
-              validateCanceling(friendRequest, currentUserId);
-              friendRequest.setStatus(FriendRequestStatus.CANCELLED);
-              return friendRequestRepository.save(friendRequest);
+            fr -> {
+              validateCanceling(fr, currentUserId);
+              fr.setStatus(FriendRequestStatus.CANCELLED);
+              return friendRequestRepository.save(fr);
             })
         .then();
   }
@@ -120,82 +124,88 @@ public class FriendshipService {
 
   public Flux<UserDto> getFriends(Long userId) {
     return friendsCache
-        .get(forId(userId), this::loadFriendsFromNeo4j)
+        .get(userId, this::loadFriendsFromNeo4j)
         .flatMapMany(Flux::fromIterable);
   }
 
   public Flux<UserDto> getFriendSuggestions(Long userId) {
     return suggestionsCache
-        .get(forId(userId), this::loadSuggestionsFromNeo4j)
+        .get(userId, this::loadSuggestionsFromNeo4j)
         .flatMapMany(Flux::fromIterable);
   }
 
-  private Mono<List<UserDto>> loadFriendsFromNeo4j(String id) {
+    private Mono<FriendRequestEntity> findFriendRequestById(Long id) {
+        return friendRequestRepository
+                .findById(id)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException(id, FRIEND_REQUEST_RESOURCE_NAME)));
+    }
+
+    private Mono<Void> validateSending(Long requesterId, Long addresseeId) {
+        if (requesterId.equals(addresseeId)) {
+            return Mono.error(new ValidationException("Cannot send friend request to yourself"));
+        }
+
+        return friendRequestRepository
+                .areFriends(requesterId, addresseeId)
+                .flatMap(
+                        areFriends -> {
+                            if (areFriends) {
+                                return Mono.error(new ValidationException("Users are already friends"));
+                            }
+                            return friendRequestRepository
+                                    .findByIdAndStatus(requesterId, addresseeId, FriendRequestStatus.PENDING.name())
+                                    .flatMap(
+                                            fr ->
+                                                    Mono.<Void>error(new ValidationException("Friend request already sent")))
+                                    .switchIfEmpty(Mono.empty());
+                        });
+    }
+
+    private void validateDefaultOperations(FriendRequestEntity fr, Long addresseeId) {
+        if (!fr.getAddresseeId().equals(addresseeId)) {
+            throw new ForbiddenException("You are not authorized to operate this request");
+        }
+        validateFriendRequestPending(fr);
+    }
+
+    private void validateCanceling(FriendRequestEntity fr, Long requesterId) {
+        if (!fr.getRequesterId().equals(requesterId)) {
+            throw new ForbiddenException("You are not authorized to cancel this request");
+        }
+        validateFriendRequestPending(fr);
+    }
+
+    private void validateFriendRequestPending(FriendRequestEntity friendRequest) {
+        if (!FriendRequestStatus.PENDING.equals(friendRequest.getStatus())) {
+            throw new ValidationException("Friend request is not pending");
+        }
+    }
+
+  private Mono<List<UserDto>> loadFriendsFromNeo4j(Long id) {
     return userNodeRepository
-        .findFriendsByUserId(Long.valueOf(id))
+        .findFriendsByUserId(id)
         .map(friendMapper::toUserDto)
         .collectList();
   }
 
-  private Mono<List<UserDto>> loadSuggestionsFromNeo4j(String id) {
+  private Mono<List<UserDto>> loadSuggestionsFromNeo4j(Long id) {
     return userNodeRepository
-        .findFriendsOfFriends(Long.valueOf(id), 10)
+        .findFriendsOfFriends(id, DEFAULT_PAGINATION)
         .map(friendMapper::toUserDto)
         .collectList();
   }
 
   private Mono<Void> evictFriendsCaches(Long userId1, Long userId2) {
-    return friendsCache.evict(forId(userId1)).then(friendsCache.evict(forId(userId2)));
+      return Mono.when(
+          friendsCache.evict(userId1),
+          friendsCache.evict(userId2)
+      );
   }
 
   private Mono<Void> evictSuggestionsCaches(Long userId1, Long userId2) {
-    return suggestionsCache.evict(forId(userId1)).then(suggestionsCache.evict(forId(userId2)));
-  }
-
-  private Mono<FriendRequestEntity> findFriendRequestById(Long id) {
-    return friendRequestRepository
-        .findById(id)
-        .switchIfEmpty(Mono.error(new ResourceNotFoundException(id, FRIEND_REQUEST_RESOURCE_NAME)));
-  }
-
-  private Mono<Void> validateSending(Long requesterId, Long addresseeId) {
-    if (requesterId.equals(addresseeId)) {
-      return Mono.error(new ValidationException("Cannot send friend request to yourself"));
-    }
-
-    return friendRequestRepository
-        .areFriends(requesterId, addresseeId)
-        .flatMap(
-            areFriends -> {
-              if (areFriends) {
-                return Mono.error(new ValidationException("Users are already friends"));
-              }
-              return friendRequestRepository
-                  .findByIdAndStatus(requesterId, addresseeId, FriendRequestStatus.PENDING.name())
-                  .flatMap(
-                      fr ->
-                          Mono.<Void>error(new ValidationException("Friend request already sent")))
-                  .switchIfEmpty(Mono.empty());
-            });
-  }
-
-  private void validateCanceling(FriendRequestEntity friendRequest, Long requesterId) {
-    if (!friendRequest.getRequesterId().equals(requesterId)) {
-      throw new ForbiddenException("You are not authorized to cancel this request");
-    }
-    validateFriendRequestPending(friendRequest);
-  }
-
-  private void validateDefaultOperations(FriendRequestEntity friendRequest, Long addresseeId) {
-    if (!friendRequest.getAddresseeId().equals(addresseeId)) {
-      throw new ForbiddenException("You are not authorized to operate this request");
-    }
-    validateFriendRequestPending(friendRequest);
-  }
-
-  private void validateFriendRequestPending(FriendRequestEntity friendRequest) {
-    if (!FriendRequestStatus.PENDING.equals(friendRequest.getStatus())) {
-      throw new IllegalArgumentException("Friend request is not pending");
-    }
+      return Mono.when(
+              suggestionsCache.evict(userId1),
+              suggestionsCache.evict(userId2)
+      );
   }
 }

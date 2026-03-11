@@ -13,15 +13,6 @@ import lombok.Data;
 @Data
 public class BlocksRelationship {
   @Id @GeneratedValue private Long id;
-
   @TargetNode private UserNode blockedUser;
-
   private OffsetDateTime createdAt;
-  private String reason;
-
-  public BlocksRelationship(UserNode blockedUser, String reason) {
-    this.blockedUser = blockedUser;
-    this.reason = reason;
-    this.createdAt = OffsetDateTime.now();
-  }
 }

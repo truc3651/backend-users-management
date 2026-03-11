@@ -16,19 +16,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PasswordResetTokenEntity {
-  @Id private Long id;
-
-  private String token;
-
-  @Column("expires_at")
+  @Id private String token;
+  private Long userId;
   private OffsetDateTime expiresAt;
 
-  private boolean used;
-
-  @Column("user_id")
-  private Long userId;
-
   @CreatedDate
-  @Column("created_at")
   private OffsetDateTime createdAt;
 }

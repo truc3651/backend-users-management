@@ -10,15 +10,14 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BaseEvent {
-  private String timestamp = String.valueOf(OffsetDateTime.now().toInstant().toEpochMilli());
+  private String timestamp;
   private String environment;
-  private KafkaEventProperties.EventName eventName;
-  private UserEventDto payload;
+  private UserPayloadDto payload;
 
   public BaseEvent(
-      String environment, KafkaEventProperties.EventName eventName, UserEventDto payload) {
+      String environment, UserPayloadDto payload) {
+    this.timestamp = String.valueOf(OffsetDateTime.now().toInstant().toEpochMilli());
     this.environment = environment;
-    this.eventName = eventName;
     this.payload = payload;
   }
 }

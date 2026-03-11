@@ -20,21 +20,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FriendRequestEntity {
   @Id private Long id;
-
-  @Column("requester_id")
   private Long requesterId;
-
-  @Column("addressee_id")
   private Long addresseeId;
-
-  @Column("status")
-  private FriendRequestStatus status = FriendRequestStatus.PENDING;
+  private FriendRequestStatus status;
 
   @CreatedDate
-  @Column("created_at")
   private OffsetDateTime createdAt;
 
   @LastModifiedDate
-  @Column("updated_at")
   private OffsetDateTime updatedAt;
 }

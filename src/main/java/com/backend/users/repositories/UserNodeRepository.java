@@ -21,32 +21,44 @@ public interface UserNodeRepository extends ReactiveNeo4jRepository<UserNode, Lo
         WHERE NOT (u)-[:FRIENDS_WITH]->(fof) AND u <> fof
         RETURN DISTINCT fof
         LIMIT $limit
-    """)
+      """)
   Flux<UserNode> findFriendsOfFriends(@Param("userId") Long userId, @Param("limit") int limit);
 
   @Query(
-      "MATCH (u:User {id: $userId})-[:FOLLOWS]->(followed:User) RETURN followed SKIP $skip LIMIT"
-          + " $limit")
+      """
+        MATCH (u:User {id: $userId})-[:FOLLOWS]->(followed:User)
+        RETURN followed
+        SKIP $offset
+        LIMIT $pageSize
+      """)
   Flux<UserNode> findFollowingPaginated(
-      @Param("userId") Long userId, @Param("skip") long skip, @Param("limit") int limit);
+      @Param("userId") Long userId, @Param("offset") long offset, @Param("pageSize") int pageSize);
 
   @Query("MATCH (u:User {id: $userId})-[:FOLLOWS]->(followed:User) RETURN count(followed)")
   Mono<Long> countFollowing(@Param("userId") Long userId);
 
   @Query(
-      "MATCH (follower:User)-[:FOLLOWS]->(u:User {id: $userId}) RETURN follower SKIP $skip LIMIT"
-          + " $limit")
+      """
+        MATCH (follower:User)-[:FOLLOWS]->(u:User {id: $userId})
+        RETURN follower
+        SKIP $offset
+        LIMIT $pageSize
+      """)
   Flux<UserNode> findFollowersPaginated(
-      @Param("userId") Long userId, @Param("skip") long skip, @Param("limit") int limit);
+      @Param("userId") Long userId, @Param("offset") long offset, @Param("pageSize") int pageSize);
 
   @Query("MATCH (follower:User)-[:FOLLOWS]->(u:User {id: $userId}) RETURN count(follower)")
   Mono<Long> countFollowers(@Param("userId") Long userId);
 
   @Query(
-      "MATCH (u:User {id: $userId})-[:BLOCKS]->(blocked:User) RETURN blocked SKIP $skip LIMIT"
-          + " $limit")
+      """
+        MATCH (u:User {id: $userId})-[:BLOCKS]->(blocked:User)
+        RETURN blocked
+        SKIP $offset
+        LIMIT $pageSize
+      """)
   Flux<UserNode> findBlockedUsersPaginated(
-      @Param("userId") Long userId, @Param("skip") long skip, @Param("limit") int limit);
+      @Param("userId") Long userId, @Param("offset") long offset, @Param("pageSize") int pageSize);
 
   @Query("MATCH (u:User {id: $userId})-[:BLOCKS]->(blocked:User) RETURN count(blocked)")
   Mono<Long> countBlockedUsers(@Param("userId") Long userId);

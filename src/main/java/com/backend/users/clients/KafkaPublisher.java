@@ -1,6 +1,7 @@
 package com.backend.users.clients;
 
 import java.time.Duration;
+import java.util.Objects;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,10 +9,10 @@ import org.springframework.stereotype.Service;
 
 import com.backend.users.config.KafkaEventProperties;
 import com.backend.users.dtos.BaseEvent;
-import com.backend.users.dtos.BlockEventDto;
-import com.backend.users.dtos.FollowEventDto;
-import com.backend.users.dtos.UnblockEventDto;
-import com.backend.users.dtos.UnfollowEventDto;
+import com.backend.users.dtos.BlockPayloadDto;
+import com.backend.users.dtos.FollowPayloadDto;
+import com.backend.users.dtos.UnblockPayloadDto;
+import com.backend.users.dtos.UnfollowPayloadDto;
 import com.fasterxml.jackson.core.JsonParseException;
 
 import lombok.RequiredArgsConstructor;
@@ -34,24 +35,24 @@ public class KafkaPublisher {
   private final KafkaEventProperties eventProperties;
   private final KafkaSender<String, BaseEvent> kafkaSender;
 
-  public Mono<Void> sendFollowEvent(FollowEventDto payload) {
-    BaseEvent event = new BaseEvent(environment, KafkaEventProperties.EventName.FOLLOW, payload);
+  public Mono<Void> sendFollowEvent(FollowPayloadDto payload) {
+    BaseEvent event = new BaseEvent(environment, payload);
     return sendEvent(event, eventProperties.getFollowTopicName());
   }
 
-  public Mono<Void> sendUnfollowEvent(UnfollowEventDto payload) {
-    BaseEvent event = new BaseEvent(environment, KafkaEventProperties.EventName.UN_FOLLOW, payload);
-    return sendEvent(event, eventProperties.getFollowTopicName());
+  public Mono<Void> sendUnfollowEvent(UnfollowPayloadDto payload) {
+    BaseEvent event = new BaseEvent(environment, payload);
+    return sendEvent(event, eventProperties.getUnfollowTopicName());
   }
 
-  public Mono<Void> sendBlockEvent(BlockEventDto payload) {
-    BaseEvent event = new BaseEvent(environment, KafkaEventProperties.EventName.BLOCK, payload);
+  public Mono<Void> sendBlockEvent(BlockPayloadDto payload) {
+    BaseEvent event = new BaseEvent(environment, payload);
     return sendEvent(event, eventProperties.getBlockTopicName());
   }
 
-  public Mono<Void> sendUnblockEvent(UnblockEventDto payload) {
-    BaseEvent event = new BaseEvent(environment, KafkaEventProperties.EventName.UN_BLOCK, payload);
-    return sendEvent(event, eventProperties.getBlockTopicName());
+  public Mono<Void> sendUnblockEvent(UnblockPayloadDto payload) {
+    BaseEvent event = new BaseEvent(environment, payload);
+    return sendEvent(event, eventProperties.getUnblockTopicName());
   }
 
   private Mono<Void> sendEvent(BaseEvent event, String topic) {
@@ -61,10 +62,10 @@ public class KafkaPublisher {
 
     return kafkaSender
         .send(Mono.just(senderRecord))
-        .next()
+        .single()
         .flatMap(
             result -> {
-              if (result.exception() != null) {
+              if (Objects.nonNull(result.exception())) {
                 return Mono.error(result.exception());
               }
               log.info(
@@ -103,17 +104,12 @@ public class KafkaPublisher {
 
   private Mono<Void> sendToDeadLetterTopic(BaseEvent event, String key, Throwable originalError) {
     String deadLetterTopic = eventProperties.getDeadLetterTopicName();
-    if (deadLetterTopic == null || deadLetterTopic.isBlank()) {
-      log.warn("Dead letter topic not configured, discarding failed event with key '{}'", key);
-      return Mono.empty();
-    }
-
     ProducerRecord<String, BaseEvent> dlqRecord = new ProducerRecord<>(deadLetterTopic, key, event);
     SenderRecord<String, BaseEvent, String> senderRecord = SenderRecord.create(dlqRecord, key);
 
     return kafkaSender
         .send(Mono.just(senderRecord))
-        .next()
+        .single()
         .doOnNext(
             result ->
                 log.info(

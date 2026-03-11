@@ -1,1 +1,0 @@
-This is the implementation of Facebook users management (Postgresql) and relationship management (Neo4j)

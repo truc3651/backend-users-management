@@ -10,13 +10,8 @@ import lombok.Data;
 @ConfigurationProperties(prefix = "kafka-properties")
 public class KafkaEventProperties {
   private String followTopicName;
+  private String unfollowTopicName;
   private String blockTopicName;
+  private String unblockTopicName;
   private String deadLetterTopicName;
-
-  public enum EventName {
-    FOLLOW,
-    UN_FOLLOW,
-    BLOCK,
-    UN_BLOCK
-  }
 }

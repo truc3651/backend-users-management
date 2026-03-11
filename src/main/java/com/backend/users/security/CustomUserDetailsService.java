@@ -1,4 +1,4 @@
-package com.backend.users.services;
+package com.backend.users.security;
 
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;

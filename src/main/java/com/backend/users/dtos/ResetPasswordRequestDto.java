@@ -1,5 +1,6 @@
 package com.backend.users.dtos;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,6 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResetPasswordRequestDto {
   @NotBlank private String token;
-
   @NotBlank private String newPassword;
 }

@@ -17,11 +17,5 @@ public interface PasswordResetTokenRepository
     extends R2dbcRepository<PasswordResetTokenEntity, Long> {
   Mono<PasswordResetTokenEntity> findByToken(String token);
 
-  @Modifying
-  @Query("DELETE FROM t_password_reset_tokens WHERE user_id = :userId")
-  Mono<Void> deleteByUserId(@Param("userId") Long userId);
-
-  @Modifying
-  @Query("DELETE FROM t_password_reset_tokens WHERE expires_at < :dateTime")
-  Mono<Void> deleteByExpiresAtBefore(@Param("dateTime") OffsetDateTime dateTime);
+  Mono<Void> deleteByToken(String token);
 }

@@ -2,39 +2,35 @@
 
 ## Executive Summary
 
-Implement comprehensive caching using the **Cache-Aside pattern** (also known as Lazy-Load) across the backend-users-management project, leveraging the existing `ReactiveCacheTemplate` from backend-core library.
+Implement **focused caching** using the Cache-Aside pattern for high-value domains only, leveraging the existing `ReactiveCacheTemplate` from backend-core library.
+
+**Philosophy**: Cache only what provides significant ROI. Avoid caching low-frequency or paginated data where cache hit rates are poor.
 
 ---
 
-## Current State Analysis
+## Final Cache Architecture
 
-### What's Already Implemented
-- `UserCacheConfig` creates a `ReactiveCacheTemplate<UserDto>` bean
-- `UserService.getUserById()` uses cache-aside pattern via `cache.get(id, this::loadUserFromDb)`
-- Single TTL configuration: `app.cache.ttl: 10m` with key-prefix: `user:`
+### What We Cache (3 domains)
 
-### Gaps Identified
-1. **No caching** for social graph queries (friends, followers, following, blocked users)
-2. **No caching** for friend requests (pending/sent)
-3. **No caching** for friend suggestions (expensive Neo4j 2-hop traversal)
-4. **Missing cache invalidation** on write operations across services
-5. **Single cache configuration** - all entities share the same TTL/prefix
+| Cache | Key Pattern | TTL | Rationale |
+|-------|-------------|-----|-----------|
+| `user:` | `user:{userId}` | 10m | User profiles - read on every authenticated request |
+| `friends:` | `friends:{userId}` | 15m | Friend lists - displayed on main UI, Neo4j query |
+| `suggestions:` | `suggestions:{userId}` | 30m | Friend-of-friends - expensive 2-hop Neo4j traversal |
+
+### What We Don't Cache (and why)
+
+| Domain | Reason NOT to cache |
+|--------|---------------------|
+| `pending-requests` | Short TTL (5m) = low hit rate. Simple PostgreSQL indexed query. |
+| `sent-requests` | Same as above. Cache invalidation complexity > benefit. |
+| `followers` | Paginated data = each page is separate cache entry = terrible hit rate. |
+| `following` | Same pagination anti-pattern. |
+| `blocked` | Low access frequency, pagination issue. |
 
 ---
 
-## Architecture Design
-
-### Cache Tier Structure (Aligned with System Design Book)
-
-Based on the newsfeed.md reference architecture (Figure 11-8), implement a **multi-tier cache**:
-
-| Cache Tier | Entity | Key Pattern | TTL | Rationale |
-|------------|--------|-------------|-----|-----------|
-| **User Cache** | UserDto | `user:{userId}` | 10m | User profile data (existing) |
-| **Social Graph Cache** | Friends list | `friends:{userId}` | 15m | Friend relationships |
-| **Action Cache** | Friend suggestions | `suggestions:{userId}` | 30m | Expensive computation, changes slowly |
-
-### Cache-Aside Pattern Implementation
+## Cache-Aside Pattern
 
 ```
 READ FLOW:
@@ -68,27 +64,36 @@ WRITE FLOW (Invalidation):
 
 ---
 
-## Implementation Plan
+## Implementation Details
 
-### Phase 1: Multi-Cache Configuration Infrastructure
+### Files Created
 
-**File: `src/main/java/com/backend/users/config/CacheProperties.java`** (NEW)
+| File | Description |
+|------|-------------|
+| `config/CacheProperties.java` | Configuration for 3 cache types with TTL and key-prefix |
+| `config/CacheConfig.java` | Spring beans for `coreUserCache`, `friendsCache`, `suggestionsCache` |
+| `cache/CacheKeyGenerator.java` | Utility for consistent key generation |
 
-Create a dedicated properties class for multiple cache configurations:
+### Files Modified
 
-```java
-@ConfigurationProperties(prefix = "app.caches")
-public class CacheProperties {
-    private CacheConfig user = new CacheConfig("user:", Duration.ofMinutes(10));
-    private CacheConfig friends = new CacheConfig("friends:", Duration.ofMinutes(15));
-    private CacheConfig suggestions = new CacheConfig("suggestions:", Duration.ofMinutes(30));
-    // getters, setters, inner CacheConfig class
-}
-```
+| File | Changes |
+|------|---------|
+| `services/UserService.java` | Uses `coreUserCache` for user profile caching |
+| `services/FriendshipService.java` | Cache-aside for `getFriends()`, `getFriendSuggestions()`. Invalidation on `acceptFriendRequest()`. |
+| `application.yaml` | Added `app.caches` configuration |
 
-**File: `src/main/resources/application.yaml`** (MODIFY)
+### Files NOT Modified (intentionally)
 
-Add cache configuration:
+| File | Reason |
+|------|--------|
+| `services/SocialConnectionService.java` | No caching - paginated data has poor hit rate |
+| `services/AuthService.java` | No cache invalidation needed |
+
+---
+
+## Configuration
+
+### application.yaml
 
 ```yaml
 app:
@@ -106,144 +111,51 @@ app:
 
 ---
 
-### Phase 2: Cache Bean Configuration
+## Service Caching Logic
 
-**File: `src/main/java/com/backend/users/config/UserCacheConfig.java`** (MODIFY → RENAME to `CacheConfig.java`)
-
-Expand to create multiple cache template beans:
+### UserService
 
 ```java
-@Configuration
-@EnableConfigurationProperties(CacheProperties.class)
-public class CacheConfig {
+public Mono<UserDto> getUserById(Long id) {
+  return coreUserCache.get(String.valueOf(id), this::loadUserFromDb);
+}
 
-    @Bean
-    public ReactiveCacheTemplate<UserDto> userCache(...);
-
-    @Bean
-    public ReactiveCacheTemplate<List<UserDto>> friendsCache(...);
-
-    @Bean
-    public ReactiveCacheTemplate<List<UserDto>> suggestionsCache(...);
+public Mono<Void> evictUserCache(Long id) {
+  return coreUserCache.evict(String.valueOf(id));
 }
 ```
 
----
-
-### Phase 3: Service Layer Caching Implementation
-
-#### 3.1 FriendshipService Caching
-
-**File: `src/main/java/com/backend/users/services/FriendshipService.java`** (MODIFY)
+### FriendshipService
 
 | Method | Cache Operation |
 |--------|-----------------|
 | `getFriends(userId)` | Cache-aside: `friendsCache.get(userId, this::loadFriendsFromNeo4j)` |
 | `getFriendSuggestions(userId)` | Cache-aside: `suggestionsCache.get(userId, this::loadSuggestionsFromNeo4j)` |
-| `getPendingFriendRequests(userId)` | Cache-aside: `pendingRequestsCache.get(userId, this::loadPendingFromDb)` |
-| `getSentFriendRequests(userId)` | Cache-aside with key `sent:{userId}` |
-| `sendFriendRequest()` | **Evict**: addressee's pending requests cache |
-| `acceptFriendRequest()` | **Evict**: both users' friends cache, suggestions cache |
-| `rejectFriendRequest()` | **Evict**: addressee's pending requests cache |
-| `cancelFriendRequest()` | **Evict**: requester's sent requests cache, addressee's pending cache |
-
-#### 3.2 SocialConnectionService Caching
-
-**File: `src/main/java/com/backend/users/services/SocialConnectionService.java`** (MODIFY)
-
-| Method | Cache Operation |
-|--------|-----------------|
-| `getFollowing(userId, page)` | Cache-aside: `followingCache.get(userId:page, this::loadFollowingFromNeo4j)` |
-| `getFollowers(userId, page)` | Cache-aside: `followersCache.get(userId:page, this::loadFollowersFromNeo4j)` |
-| `getBlockedUsers(userId, page)` | Cache-aside: `blockedCache.get(userId:page, this::loadBlockedFromNeo4j)` |
-| `follow()` | **Evict**: follower's following cache, followee's follower cache, counts |
-| `unfollow()` | **Evict**: follower's following cache, followee's follower cache, counts |
-| `block()` | **Evict**: blocker's blocked cache |
-| `unblock()` | **Evict**: blocker's blocked cache |
-
-#### 3.3 AuthService Cache Invalidation
-
-**File: `src/main/java/com/backend/users/services/AuthService.java`** (MODIFY)
-
-| Method | Cache Operation |
-|--------|-----------------|
-| `changePassword()` | **Evict**: user cache (profile may change) |
-| `register()` | No cache operation needed (new user) |
+| `acceptFriendRequest()` | **Evict**: both users' friends cache + suggestions cache |
+| `getPendingFriendRequests()` | No cache - direct DB query |
+| `getSentFriendRequests()` | No cache - direct DB query |
 
 ---
 
-### Phase 4: Cache Key Strategy
+## TTL Reasoning
 
-Create a utility class for consistent key generation:
+| Cache | TTL | Reasoning |
+|-------|-----|-----------|
+| `user:` | 10m | Profiles change infrequently. 10m staleness is acceptable. |
+| `friends:` | 15m | Friendships are stable once accepted. Longer TTL justified. |
+| `suggestions:` | 30m | Expensive computation, changes slowly. Users tolerate stale suggestions. |
 
-**File: `src/main/java/com/backend/users/cache/CacheKeyGenerator.java`** (NEW)
-
-```java
-public final class CacheKeyGenerator {
-    public static String userKey(Long userId) {
-        return String.valueOf(userId);
-    }
-
-    public static String paginatedKey(Long userId, int page) {
-        return userId + ":" + page;
-    }
-
-    public static String countKey(String type, Long userId) {
-        return type + ":" + userId;
-    }
-}
-```
+**General principles:**
+- High write frequency → shorter TTL
+- Expensive computation → longer TTL (justify the cache)
+- User expectation of real-time → shorter TTL
 
 ---
 
-### Phase 5: Paginated Cache Strategy
+## Verification
 
-For paginated endpoints (followers, following, blocked), implement page-aware caching:
+### Manual Testing
 
-**Option A: Cache per page** (Recommended)
-- Key: `followers:{userId}:{page}`
-- Pros: Simple, works with existing `ReactiveCacheTemplate`
-- Cons: First page change invalidates all pages
-
-**Option B: Cache IDs only, hydrate separately**
-- Cache: List of user IDs per user
-- Hydrate: Use `userCache` for full objects
-- Pros: Better cache hit rate
-- Cons: More complexity, N+1 cache lookups
-
-**Decision**: Use Option A for simplicity. On write operations, invalidate all pages using pattern-based deletion.
-
----
-
-## Files to Modify/Create
-
-| File | Action | Description |
-|------|--------|-------------|
-| `config/CacheProperties.java` | CREATE | Multi-cache configuration |
-| `config/UserCacheConfig.java` | RENAME → `CacheConfig.java` | Add all cache beans |
-| `cache/CacheKeyGenerator.java` | CREATE | Consistent key generation |
-| `services/FriendshipService.java` | MODIFY | Add caching + invalidation |
-| `services/SocialConnectionService.java` | MODIFY | Add caching + invalidation |
-| `services/AuthService.java` | MODIFY | Add cache invalidation |
-| `application.yaml` | MODIFY | Add cache configurations |
-| `application-localdev.yml` | MODIFY | Ensure cache config present |
-
----
-
-## Verification Plan
-
-### 1. Unit Tests
-- Mock `ReactiveCacheTemplate` in service tests
-- Verify cache.get() called before DB
-- Verify cache.evict() called on write operations
-
-### 2. Integration Tests
-- Start Redis container (Testcontainers)
-- Verify cache population on first read
-- Verify cache hit on second read
-- Verify cache invalidation on writes
-
-### 3. Manual Testing Checklist
 ```bash
 # 1. Start local Redis
 docker run -d -p 6379:6379 redis:7-alpine
@@ -251,47 +163,41 @@ docker run -d -p 6379:6379 redis:7-alpine
 # 2. Run application
 ./gradlew bootRun --args='--spring.profiles.active=localdev'
 
-# 3. Test user caching
-curl -X GET http://localhost:8090/v1/api/user/me  # First call: cache miss
-curl -X GET http://localhost:8090/v1/api/user/me  # Second call: cache hit
+# 3. Test friends caching
+curl -X GET http://localhost:8090/v1/api/friendships/friends
+# First call: cache miss (loads from Neo4j)
+# Second call: cache hit
 
 # 4. Verify in Redis CLI
 redis-cli
-> KEYS user:*
-> TTL user:1
+> KEYS friends:*
+> TTL friends:1
+> GET friends:1
 
-# 5. Test cache invalidation
-curl -X POST http://localhost:8090/v1/api/user/change-password
-redis-cli KEYS user:*  # Should be empty (evicted)
+# 5. Test cache invalidation (accept friend request)
+curl -X POST http://localhost:8090/v1/api/friendships/requests/1/accept
+redis-cli KEYS friends:*  # Both users' caches evicted
 ```
 
 ---
 
-## Trade-offs & Decisions
+## Trade-offs
 
 | Decision | Rationale |
 |----------|-----------|
-| **Delete-only eviction** | Prevents write-ordering issues in distributed systems (per backend-core design) |
-| **TTL-based expiry** | Self-healing for stale data without complex invalidation |
-| **Page-based pagination cache** | Simpler than ID-list + hydration approach |
-| **5-30 min TTLs** | Balanced between freshness and cache hit rate |
-| **No distributed locks** | Acceptable stale reads; DB is source of truth |
-| **Graceful degradation** | Cache failures fall back to DB (already in ReactiveCacheTemplate) |
+| **Only 3 caches** | Focus on high-ROI domains. Avoid complexity for marginal gains. |
+| **No pagination caching** | Each page = separate cache entry = poor hit rate. Anti-pattern. |
+| **Delete-only eviction** | Prevents write-ordering issues in distributed systems. |
+| **TTL-based expiry** | Self-healing for stale data without complex invalidation. |
+| **Graceful degradation** | Cache failures fall back to DB (built into ReactiveCacheTemplate). |
 
 ---
 
-## Risk Mitigation
+## Future Considerations
 
-1. **Cache stampede**: ReactiveCacheTemplate's `get()` with fallback handles this via Mono.defer()
-2. **Memory pressure**: TTL-based eviction prevents unbounded growth
-3. **Inconsistency**: Delete-only eviction + TTL ensures eventual consistency
-4. **Performance regression**: Fallback to DB on cache failure maintains availability
+If metrics show need for more caching:
 
----
-
-## Out of Scope
-
-- Distributed cache invalidation via Kafka (can be added later)
-- Cache warming strategies
-- Cache metrics/monitoring (observability layer)
-- Rate limiting integration with cache
+1. **Add cache metrics** - Track hit/miss rates before expanding
+2. **Consider followers count cache** - Single value, not paginated
+3. **Kafka-based invalidation** - For distributed cache consistency
+4. **Cache warming** - Pre-populate for hot users on startup

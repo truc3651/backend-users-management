@@ -43,9 +43,7 @@ public class SecurityConfig {
 
     configureOpenPaths(http);
 
-    http.authorizeExchange(
-            exchange ->
-                exchange.pathMatchers("**/internal/**").permitAll().anyExchange().authenticated())
+    http.authorizeExchange(exchange -> exchange.anyExchange().authenticated())
         .exceptionHandling(
             exception ->
                 exception

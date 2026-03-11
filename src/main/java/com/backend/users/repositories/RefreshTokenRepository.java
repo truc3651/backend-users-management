@@ -14,11 +14,5 @@ import reactor.core.publisher.Mono;
 public interface RefreshTokenRepository extends R2dbcRepository<RefreshTokenEntity, Long> {
   Mono<RefreshTokenEntity> findByToken(String token);
 
-  @Modifying
-  @Query("DELETE FROM t_refresh_tokens WHERE user_id = :userId")
-  Mono<Void> deleteByUserId(@Param("userId") Long userId);
-
-  @Modifying
-  @Query("DELETE FROM t_refresh_tokens WHERE expires_at < :now")
-  Mono<Void> deleteByExpiresAtBefore(@Param("now") OffsetDateTime now);
+  Mono<Void> deleteByToken(String token);
 }

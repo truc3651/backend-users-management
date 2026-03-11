@@ -7,6 +7,5 @@ import lombok.Data;
 @Data
 public class RegisterRequestDto {
   @NotBlank @Email private String email;
-
   @NotBlank private String password;
 }

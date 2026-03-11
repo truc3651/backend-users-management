@@ -23,7 +23,7 @@ public interface FriendRequestRepository extends R2dbcRepository<FriendRequestEn
             (fr.requester_id = :addresseeId AND fr.addressee_id = :requesterId)
         )
         AND fr.status = 'ACCEPTED'
-    """)
+      """)
   Mono<Boolean> areFriends(
       @Param("requesterId") Long requesterId, @Param("addresseeId") Long addresseeId);
 
@@ -36,7 +36,7 @@ public interface FriendRequestRepository extends R2dbcRepository<FriendRequestEn
             OR
             (fr.requester_id = :addresseeId AND fr.addressee_id = :requesterId)
         )
-    """)
+      """)
   Mono<FriendRequestEntity> findByIdAndStatus(
       @Param("requesterId") Long requesterId,
       @Param("addresseeId") Long addresseeId,

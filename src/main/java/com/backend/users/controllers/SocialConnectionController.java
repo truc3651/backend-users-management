@@ -15,22 +15,21 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/api/social")
+@RequestMapping("/v1/api/social")
 @RequiredArgsConstructor
 public class SocialConnectionController {
   private final SocialConnectionService socialConnectionService;
-  private final KafkaPublisher kafkaPublisher;
 
   @PostMapping("/follow/{followedId}")
   public Mono<Void> follow(
       @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long followedId) {
-    return socialConnectionService.follow(currentUser.getId(), followedId);
+    return socialConnectionService.follow(currentUser, followedId);
   }
 
   @PostMapping("/unfollow/{followedId}")
   public Mono<Void> unfollow(
       @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long followedId) {
-    return socialConnectionService.unfollow(currentUser.getId(), followedId);
+    return socialConnectionService.unfollow(currentUser, followedId);
   }
 
   @GetMapping("/following")
@@ -38,8 +37,7 @@ public class SocialConnectionController {
       @AuthenticationPrincipal UserEntity currentUser,
       @RequestParam Long offset,
       @RequestParam Integer pageSize) {
-    Pageable pageable = new OffsetBasedPageRequest(offset, pageSize);
-    return socialConnectionService.getFollowing(currentUser.getId(), pageable);
+    return socialConnectionService.getFollowing(currentUser, offset, pageSize);
   }
 
   @GetMapping("/followers")
@@ -47,20 +45,19 @@ public class SocialConnectionController {
       @AuthenticationPrincipal UserEntity currentUser,
       @RequestParam Long offset,
       @RequestParam Integer pageSize) {
-    Pageable pageable = new OffsetBasedPageRequest(offset, pageSize);
-    return socialConnectionService.getFollowers(currentUser.getId(), pageable);
+    return socialConnectionService.getFollowers(currentUser.getId(), offset, pageSize);
   }
 
   @PostMapping("/unfollow/{blockedId}")
   public Mono<Void> block(
       @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long blockedId) {
-    return socialConnectionService.block(currentUser.getId(), blockedId);
+    return socialConnectionService.block(currentUser, blockedId);
   }
 
   @PostMapping("/unfollow/{blockedId}")
   public Mono<Void> unblock(
       @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long blockedId) {
-    return socialConnectionService.unblock(currentUser.getId(), blockedId);
+    return socialConnectionService.unblock(currentUser, blockedId);
   }
 
   @GetMapping("/blocked")
@@ -68,7 +65,6 @@ public class SocialConnectionController {
       @AuthenticationPrincipal UserEntity currentUser,
       @RequestParam Long offset,
       @RequestParam Integer pageSize) {
-    Pageable pageable = new OffsetBasedPageRequest(offset, pageSize);
-    return socialConnectionService.getBlockedUsers(currentUser.getId(), pageable);
+    return socialConnectionService.getBlockedUsers(currentUser, offset, pageSize);
   }
 }

@@ -13,13 +13,6 @@ import lombok.Data;
 @Data
 public class FollowsRelationship {
   @Id @GeneratedValue private Long id;
-
   @TargetNode private UserNode followedUser;
-
   private OffsetDateTime createdAt;
-
-  public FollowsRelationship(UserNode followedUser) {
-    this.followedUser = followedUser;
-    this.createdAt = OffsetDateTime.now();
-  }
 }

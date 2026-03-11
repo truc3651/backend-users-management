@@ -1,34 +1,19 @@
 spring:
   application:
-    name: users-management
-  r2dbc:
-    url: r2dbc:postgresql://localhost:5432/users_db
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    name: backend-users
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:migrations
     schemas: users
-    url: jdbc:postgresql://localhost:5432/users_db
-    user: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       retries: 3
-    properties:
-      enable.idempotence: true
-      dead-letter-topic: dlq
 
 org:
   neo4j:
-    migrations:
-      enabled: false
-      locations-to-scan: classpath:neo4j.migrations
-      transaction-mode: per-migration
     pool:
       max-size: 50
       connection-acquisition-timeout: 60s
@@ -38,14 +23,16 @@ org:
     max-transaction-retry-time: 30s
 
 kafka-properties:
-  follow-topic-name: follow
-  block-topic-name: block
+  follow-topic-name: follows
+  unfollow-topic-name: unfollows
+  block-topic-name: blocks
+  unblock-topic-name: unblocks
+  dead-letter-topic-name: deadLetters
 
 web:
   security:
     open-paths:
       - pattern: /v1/api/auth/**
-      - pattern: /api/internal/**
 
 app:
   caches:
@@ -60,9 +47,6 @@ app:
       ttl: 30m
 
 jwt:
-  secret: your-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm-please-change-this
   access-token-expiration: 900000      # 15 minutes
   refresh-token-expiration: 604800000  # 7 days
-
-password:
-  reset-token-expiration: 900000  # 15 minutes
+  reset-token-expiration: 900000       # 15 minutes

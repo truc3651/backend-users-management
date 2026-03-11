@@ -24,7 +24,7 @@ public class FriendshipController {
   public Mono<Void> sendFriendRequest(
       @AuthenticationPrincipal UserEntity currentUser,
       @Valid @RequestBody SendFriendRequestDto request) {
-    return friendshipService.sendFriendRequest(currentUser, request.getAddresseeId());
+    return friendshipService.sendFriendRequest(currentUser, request);
   }
 
   @PostMapping("/requests/{requestId}/accept")

@@ -12,10 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode(callSuper = true)
-public class BlockEventDto extends UserEventDto {
+public class UnblockPayloadDto extends UserPayloadDto {
   private Long blockedId;
 
-  public BlockEventDto(Long userId, Long blockedId) {
+  public UnblockPayloadDto(Long userId, Long blockedId) {
     super(userId);
     this.blockedId = blockedId;
   }

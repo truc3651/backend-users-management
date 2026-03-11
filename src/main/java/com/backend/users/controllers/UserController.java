@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.backend.core.dtos.UserDto;
 import com.backend.users.dtos.ChangePasswordRequestDto;
+import com.backend.users.dtos.LogoutRequestDto;
 import com.backend.users.dtos.RefreshTokenRequestDto;
 import com.backend.users.dtos.RefreshTokenResponseDto;
 import com.backend.users.entities.UserEntity;
@@ -24,15 +25,8 @@ import reactor.core.publisher.Mono;
 public class UserController {
   private final AuthService authService;
 
-  @GetMapping("/me")
-  public Mono<UserDto> getProfile(@AuthenticationPrincipal UserEntity currentUser) {
-    return authService.getProfile(currentUser);
-  }
-
   @PostMapping("/change-password")
-  public Mono<Void> changePassword(
-      @AuthenticationPrincipal UserEntity currentUser,
-      @Valid @RequestBody ChangePasswordRequestDto request) {
+  public Mono<Void> changePassword(@AuthenticationPrincipal UserEntity currentUser, @Valid @RequestBody ChangePasswordRequestDto request) {
     return authService.changePassword(currentUser, request);
   }
 
@@ -42,7 +36,7 @@ public class UserController {
   }
 
   @PostMapping("/logout")
-  public Mono<Void> logout(@AuthenticationPrincipal UserEntity currentUser) {
-    return authService.logout(currentUser.getId());
+  public Mono<Void> logout(@Valid @RequestBody LogoutRequestDto request) {
+    return authService.logout(request);
   }
 }
