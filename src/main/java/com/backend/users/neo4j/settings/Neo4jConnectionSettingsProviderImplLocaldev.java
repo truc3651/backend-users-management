@@ -10,31 +10,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class Neo4jConnectionSettingsProviderImplLocaldev
     implements Neo4jConnectionSettingsProvider {
-  private final LocaldevNeo4jSettings localdevNeo4jSettings;
+  private final LocaldevNeo4jSettings localdevSettings;
 
   @Override
   public Neo4jConnectionSettings provide() {
-    Neo4jConnectionSettings neo4jConnectionSettings = new Neo4jConnectionSettings();
+    Neo4jConnectionSettings settings = new Neo4jConnectionSettings();
 
-    // Writer
-    neo4jConnectionSettings.setWriterHost(localdevNeo4jSettings.getNeo4jHost());
-    neo4jConnectionSettings.setWriterPort(localdevNeo4jSettings.getNeo4jPort());
-    neo4jConnectionSettings.setWriterUsername(localdevNeo4jSettings.getNeo4jUsername());
-    neo4jConnectionSettings.setWriterPassword(localdevNeo4jSettings.getNeo4jPassword());
+    settings.setWriterHost(localdevSettings.getNeo4jHost());
+    settings.setWriterPort(localdevSettings.getNeo4jPort());
+    settings.setWriterUsername(localdevSettings.getNeo4jUsername());
+    settings.setWriterPassword(localdevSettings.getNeo4jPassword());
 
-    // Reader (in local dev, same as writer)
-    neo4jConnectionSettings.setReaderHost(localdevNeo4jSettings.getNeo4jHost());
-    neo4jConnectionSettings.setReaderPort(localdevNeo4jSettings.getNeo4jPort());
-    neo4jConnectionSettings.setReaderUsername(localdevNeo4jSettings.getNeo4jUsername());
-    neo4jConnectionSettings.setReaderPassword(localdevNeo4jSettings.getNeo4jPassword());
+    settings.setReaderHost(localdevSettings.getNeo4jHost());
+    settings.setReaderPort(localdevSettings.getNeo4jPort());
+    settings.setReaderUsername(localdevSettings.getNeo4jUsername());
+    settings.setReaderPassword(localdevSettings.getNeo4jPassword());
 
-    // Migration
-    neo4jConnectionSettings.setMigrationUsername(localdevNeo4jSettings.getNeo4jUsername());
-    neo4jConnectionSettings.setMigrationPassword(localdevNeo4jSettings.getNeo4jPassword());
+    settings.setDatabase(localdevSettings.getNeo4jDatabase());
 
-    // Common
-    neo4jConnectionSettings.setDatabase(localdevNeo4jSettings.getNeo4jDatabase());
-
-    return neo4jConnectionSettings;
+    return settings;
   }
 }

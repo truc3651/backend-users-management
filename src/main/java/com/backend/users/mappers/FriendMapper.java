@@ -3,7 +3,6 @@ package com.backend.users.mappers;
 import java.util.List;
 
 import org.mapstruct.Mapper;
-import org.springframework.data.domain.Pageable;
 
 import com.backend.core.web.page.Page;
 import com.backend.users.dtos.FriendRequestResponseDto;

@@ -4,7 +4,6 @@ import java.time.OffsetDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.AllArgsConstructor;
@@ -20,6 +19,5 @@ public class PasswordResetTokenEntity {
   private Long userId;
   private OffsetDateTime expiresAt;
 
-  @CreatedDate
-  private OffsetDateTime createdAt;
+  @CreatedDate private OffsetDateTime createdAt;
 }

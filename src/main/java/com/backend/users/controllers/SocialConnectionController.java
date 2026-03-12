@@ -1,12 +1,9 @@
 package com.backend.users.controllers;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import com.backend.core.web.page.OffsetBasedPageRequest;
 import com.backend.core.web.page.Page;
-import com.backend.users.clients.KafkaPublisher;
 import com.backend.users.dtos.UserDto;
 import com.backend.users.entities.UserEntity;
 import com.backend.users.services.SocialConnectionService;
@@ -48,13 +45,13 @@ public class SocialConnectionController {
     return socialConnectionService.getFollowers(currentUser.getId(), offset, pageSize);
   }
 
-  @PostMapping("/unfollow/{blockedId}")
+  @PostMapping("/block/{blockedId}")
   public Mono<Void> block(
       @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long blockedId) {
     return socialConnectionService.block(currentUser, blockedId);
   }
 
-  @PostMapping("/unfollow/{blockedId}")
+  @PostMapping("/unblock/{blockedId}")
   public Mono<Void> unblock(
       @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long blockedId) {
     return socialConnectionService.unblock(currentUser, blockedId);

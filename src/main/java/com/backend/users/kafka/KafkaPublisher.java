@@ -1,34 +1,27 @@
-package com.backend.users.clients;
+package com.backend.users.kafka;
 
-import java.time.Duration;
 import java.util.Objects;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.backend.users.config.KafkaEventProperties;
 import com.backend.users.dtos.BaseEvent;
 import com.backend.users.dtos.BlockPayloadDto;
 import com.backend.users.dtos.FollowPayloadDto;
 import com.backend.users.dtos.UnblockPayloadDto;
 import com.backend.users.dtos.UnfollowPayloadDto;
-import com.fasterxml.jackson.core.JsonParseException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import reactor.kafka.sender.KafkaSender;
 import reactor.kafka.sender.SenderRecord;
-import reactor.util.retry.Retry;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class KafkaPublisher {
-  private static final int MAX_RETRY_ATTEMPTS = 3;
-  private static final Duration RETRY_BACKOFF = Duration.ofSeconds(1);
-
   @Value("${ENVIRONMENT}")
   private String environment;
 
@@ -66,7 +59,12 @@ public class KafkaPublisher {
         .flatMap(
             result -> {
               if (Objects.nonNull(result.exception())) {
-                return Mono.error(result.exception());
+                log.error(
+                    "Failed to send event to topic '{}' with key '{}': {}",
+                    topic,
+                    key,
+                    result.exception().getMessage());
+                return sendToDeadLetterTopic(event, key, result.exception());
               }
               log.info(
                   "Successfully sent event to topic '{}' with key '{}' at offset {}",
@@ -75,31 +73,7 @@ public class KafkaPublisher {
                   result.recordMetadata().offset());
               return Mono.empty();
             })
-        .retryWhen(
-            Retry.fixedDelay(MAX_RETRY_ATTEMPTS, RETRY_BACKOFF)
-                .filter(this::isRetryableException)
-                .doBeforeRetry(
-                    retrySignal ->
-                        log.warn(
-                            "Retrying to send event to topic '{}' with key '{}', attempt {}",
-                            topic,
-                            key,
-                            retrySignal.totalRetries() + 1)))
-        .onErrorResume(
-            e -> {
-              log.error(
-                  "Failed to send event to topic '{}' with key '{}' after {} retries: {}",
-                  topic,
-                  key,
-                  MAX_RETRY_ATTEMPTS,
-                  e.getMessage());
-              return sendToDeadLetterTopic(event, key, e);
-            })
         .then();
-  }
-
-  private boolean isRetryableException(Throwable e) {
-    return !(e instanceof IllegalArgumentException) && !(e instanceof JsonParseException);
   }
 
   private Mono<Void> sendToDeadLetterTopic(BaseEvent event, String key, Throwable originalError) {

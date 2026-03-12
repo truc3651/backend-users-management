@@ -1,4 +1,4 @@
-package com.backend.users.config;
+package com.backend.users.neo4j;
 
 import org.neo4j.driver.Driver;
 import org.springframework.context.annotation.Bean;

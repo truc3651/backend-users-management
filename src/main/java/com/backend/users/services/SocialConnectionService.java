@@ -1,17 +1,16 @@
 package com.backend.users.services;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.backend.core.web.page.Page;
-import com.backend.users.clients.KafkaPublisher;
 import com.backend.users.dtos.BlockPayloadDto;
 import com.backend.users.dtos.FollowPayloadDto;
 import com.backend.users.dtos.UnblockPayloadDto;
 import com.backend.users.dtos.UnfollowPayloadDto;
 import com.backend.users.dtos.UserDto;
 import com.backend.users.entities.UserEntity;
+import com.backend.users.kafka.KafkaPublisher;
 import com.backend.users.mappers.FriendMapper;
 import com.backend.users.repositories.UserNodeRepository;
 
@@ -69,7 +68,8 @@ public class SocialConnectionService {
     return kafkaPublisher.sendUnblockEvent(payload);
   }
 
-  public Mono<Page<UserDto>> getBlockedUsers(UserEntity currentUser, Long offset, Integer pageSize) {
+  public Mono<Page<UserDto>> getBlockedUsers(
+      UserEntity currentUser, Long offset, Integer pageSize) {
     Long userId = currentUser.getId();
     return userNodeRepository
         .findBlockedUsersPaginated(userId, offset, pageSize)

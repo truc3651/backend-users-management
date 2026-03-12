@@ -2,6 +2,9 @@ ENVIRONMENT: localdev
 server:
   port: 8090
 
+app:
+  domain: localhost:8090
+
 AURORA_HOST: localhost
 AURORA_PORT: 5432
 AURORA_USERNAME: postgres
@@ -18,3 +21,16 @@ NEO4J_DATABASE: users_localdev
 cache:
   host: localhost
   port: 6379
+
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always

@@ -1,0 +1,21 @@
+ENVIRONMENT: test
+
+spring:
+  application:
+    name: backend-users-test
+  flyway:
+    enabled: true
+    locations: classpath:migrations
+    schemas: users
+
+app:
+  caches:
+    user:
+      key-prefix: "test:user:"
+      ttl: 1m
+    friends:
+      key-prefix: "test:friends:"
+      ttl: 1m
+    suggestions:
+      key-prefix: "test:suggestions:"
+      ttl: 1m

@@ -10,7 +10,6 @@ import com.backend.users.entities.RefreshTokenEntity;
 import com.backend.users.entities.UserEntity;
 import com.backend.users.repositories.RefreshTokenRepository;
 
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -19,9 +18,8 @@ public class RefreshTokenService {
   private final Long refreshTokenExpiration;
 
   public RefreshTokenService(
-          RefreshTokenRepository refreshTokenRepository,
-          @Value("${jwt.refresh-token-expiration}")
-          Long refreshTokenExpiration) {
+      RefreshTokenRepository refreshTokenRepository,
+      @Value("${jwt.refresh-token-expiration}") Long refreshTokenExpiration) {
     this.refreshTokenRepository = refreshTokenRepository;
     this.refreshTokenExpiration = refreshTokenExpiration;
   }
@@ -37,14 +35,14 @@ public class RefreshTokenService {
 
   public Mono<RefreshTokenEntity> validateRefreshToken(String token) {
     return refreshTokenRepository
-            .findByToken(token)
-            .flatMap(
-                    rt -> {
-                      if (rt.getExpiresAt().isBefore(OffsetDateTime.now())) {
-                        return refreshTokenRepository.delete(rt).then(Mono.empty());
-                      }
-                      return Mono.just(rt);
-                    });
+        .findByToken(token)
+        .flatMap(
+            rt -> {
+              if (rt.getExpiresAt().isBefore(OffsetDateTime.now())) {
+                return refreshTokenRepository.delete(rt).then(Mono.empty());
+              }
+              return Mono.just(rt);
+            });
   }
 
   public Mono<Void> deleteRefreshToken(String token) {

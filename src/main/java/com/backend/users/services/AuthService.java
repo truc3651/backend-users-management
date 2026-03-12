@@ -13,7 +13,6 @@ import com.backend.core.dtos.UserDto;
 import com.backend.core.dtos.ValidateTokenRequestDto;
 import com.backend.core.dtos.ValidateTokenResponseDto;
 import com.backend.core.exceptions.ValidationException;
-import com.backend.core.security.JwtTokenAuthenticationHolder;
 import com.backend.users.dtos.ChangePasswordRequestDto;
 import com.backend.users.dtos.ForgotPasswordRequestDto;
 import com.backend.users.dtos.LoginRequestDto;
@@ -26,13 +25,16 @@ import com.backend.users.dtos.ResetPasswordRequestDto;
 import com.backend.users.entities.UserEntity;
 import com.backend.users.enums.JwtPayloadFields;
 import com.backend.users.repositories.UserRepository;
+import com.backend.users.ses.MailService;
 import com.backend.users.utils.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
   private final RefreshTokenService refreshTokenService;
   private final PasswordResetService passwordResetService;
@@ -55,7 +57,10 @@ public class AuthService {
               UserEntity user = new UserEntity();
               user.setEmail(request.getEmail());
               user.setPassword(passwordEncoder.encode(request.getPassword()));
-              return userRepository.save(user).then();
+              return userRepository
+                  .save(user)
+                  .doOnSuccess(u -> mailService.sendWelcomeMail(u.getEmail()).subscribe())
+                  .then();
             });
   }
 
@@ -74,85 +79,92 @@ public class AuthService {
             });
   }
 
-    @Transactional
-    public Mono<Void> forgotPassword(ForgotPasswordRequestDto request) {
-        return userRepository
+  @Transactional
+  public Mono<Void> forgotPassword(ForgotPasswordRequestDto request) {
+    return userRepository
         .findByEmail(request.getEmail())
         .switchIfEmpty(
-                Mono.error(
-                        new UsernameNotFoundException("User not found with email: " + request.getEmail())))
+            Mono.error(
+                new UsernameNotFoundException("User not found with email: " + request.getEmail())))
         .flatMap(
-                user ->
-                        passwordResetService.createPasswordResetToken(user)
-                                .flatMap(
-                                        rt ->
-                                                mailService.sendResetPasswordMail(
-                                                        user.getEmail(), rt.getToken())));
-    }
+            user ->
+                passwordResetService
+                    .createPasswordResetToken(user)
+                    .doOnSuccess(
+                        rp ->
+                            mailService
+                                .sendResetPasswordMail(user.getEmail(), rp.getToken())
+                                .subscribe()))
+        .then();
+  }
 
-    public Mono<Void> resetPassword(ResetPasswordRequestDto request) {
-        return passwordResetService.validatePasswordResetToken(request.getToken())
-                .switchIfEmpty(Mono.error(new ValidationException("Invalid or expired reset token")))
-                .flatMap(token ->
-                        userRepository
-                                .findById(token.getUserId())
-                                .switchIfEmpty(Mono.error(new ValidationException("User not found")))
-                                .flatMap(user -> {
-                                    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-                                    return userRepository.save(user);
-                                })
-                                .then(passwordResetService.deletePasswordResetToken(request.getToken()))
-                )
-                .then();
-    }
+  public Mono<Void> resetPassword(ResetPasswordRequestDto request) {
+    return passwordResetService
+        .validatePasswordResetToken(request.getToken())
+        .switchIfEmpty(Mono.error(new ValidationException("Invalid or expired reset token")))
+        .flatMap(
+            token ->
+                userRepository
+                    .findById(token.getUserId())
+                    .switchIfEmpty(Mono.error(new ValidationException("User not found")))
+                    .flatMap(
+                        user -> {
+                          user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+                          return userRepository.save(user);
+                        })
+                    .then(passwordResetService.deletePasswordResetToken(request.getToken())))
+        .then();
+  }
 
-    public Mono<ValidateTokenResponseDto> validateToken(ValidateTokenRequestDto request) {
-        return Mono.fromCallable(
-                () -> {
-                    String token = request.getToken();
-                    boolean isInvalid = jwtUtil.isTokenExpired(token);
-                    if (isInvalid) {
-                        return ValidateTokenResponseDto.builder().valid(false).build();
-                    }
-                    Map<String, Object> extractPayload = jwtUtil.extractPayload(token);
-                    UserDto user = new UserDto(
-                            (Long) extractPayload.get(JwtPayloadFields.ID.getName()),
-                            (String) extractPayload.get(JwtPayloadFields.EMAIL.getName()));
-                    return ValidateTokenResponseDto.builder()
-                            .valid(true)
-                            .expiresAt(jwtUtil.extractExpiration(token))
-                            .user(user)
-                            .build();
-                });
-    }
+  public Mono<ValidateTokenResponseDto> validateToken(ValidateTokenRequestDto request) {
+    return Mono.fromCallable(
+        () -> {
+          String token = request.getToken();
+          boolean isInvalid = jwtUtil.isTokenExpired(token);
+          if (isInvalid) {
+            return ValidateTokenResponseDto.builder().valid(false).build();
+          }
+          Map<String, Object> extractPayload = jwtUtil.extractPayload(token);
+          UserDto user =
+              new UserDto(
+                  (Long) extractPayload.get(JwtPayloadFields.ID.getName()),
+                  (String) extractPayload.get(JwtPayloadFields.EMAIL.getName()));
+          return ValidateTokenResponseDto.builder()
+              .valid(true)
+              .expiresAt(jwtUtil.extractExpiration(token))
+              .user(user)
+              .build();
+        });
+  }
 
-    @Transactional
-    public Mono<Void> changePassword(UserEntity currentUser, ChangePasswordRequestDto request) {
-      Long userId = currentUser.getId();
-        return userRepository
-                .findById(userId)
-                .flatMap(user -> {
-                    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-                    return userRepository.save(user);
-                })
-                .then();
-    }
+  @Transactional
+  public Mono<Void> changePassword(UserEntity currentUser, ChangePasswordRequestDto request) {
+    Long userId = currentUser.getId();
+    return userRepository
+        .findById(userId)
+        .flatMap(
+            user -> {
+              user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+              return userRepository.save(user);
+            })
+        .then();
+  }
 
-    @Transactional
-    public Mono<RefreshTokenResponseDto> refreshAccessToken(RefreshTokenRequestDto request) {
-        return refreshTokenService
-                .validateRefreshToken(request.getRefreshToken())
-                .switchIfEmpty(Mono.error(new ValidationException("Invalid or expired refresh token")))
-                .flatMap(
-                        refreshToken ->
-                                userRepository
-                                        .findById(refreshToken.getUserId())
-                                        .map(user -> new RefreshTokenResponseDto(jwtUtil.generateToken(user))));
-    }
+  @Transactional
+  public Mono<RefreshTokenResponseDto> refreshAccessToken(RefreshTokenRequestDto request) {
+    return refreshTokenService
+        .validateRefreshToken(request.getRefreshToken())
+        .switchIfEmpty(Mono.error(new ValidationException("Invalid or expired refresh token")))
+        .flatMap(
+            refreshToken ->
+                userRepository
+                    .findById(refreshToken.getUserId())
+                    .map(user -> new RefreshTokenResponseDto(jwtUtil.generateToken(user))));
+  }
 
-    @Transactional
-    public Mono<Void> logout(LogoutRequestDto request) {
-        // accessToken is short live, let it expires itself without any intervention
-        return refreshTokenService.deleteRefreshToken(request.getRefreshToken());
-    }
+  @Transactional
+  public Mono<Void> logout(LogoutRequestDto request) {
+    // accessToken is short live, let it expires itself without any intervention
+    return refreshTokenService.deleteRefreshToken(request.getRefreshToken());
+  }
 }

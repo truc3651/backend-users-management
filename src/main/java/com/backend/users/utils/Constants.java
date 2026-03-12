@@ -4,4 +4,7 @@ public final class Constants {
   public static final String FRIEND_REQUEST_RESOURCE_NAME = "Friend request";
   public static final String USER_RESOURCE_NAME = "User";
   public static final Integer DEFAULT_PAGINATION = 20;
+  public static final String DATABASE = "database";
+  public static final String NEO4J = "neo4j";
+  public static final String POSTGRESQL = "postgresql";
 }

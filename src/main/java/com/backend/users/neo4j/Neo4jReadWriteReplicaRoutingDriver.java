@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @AllArgsConstructor
-public class ReadWriteReplicaRoutingNeo4jDriver implements Driver {
+public class Neo4jReadWriteReplicaRoutingDriver implements Driver {
   private final Map<String, Driver> drivers;
   private final Driver defaultDriver;
 

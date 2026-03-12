@@ -1,4 +1,4 @@
-package com.backend.users.config;
+package com.backend.users.kafka;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

@@ -1,6 +1,5 @@
 package com.backend.users.neo4j;
 
-import static com.backend.users.neo4j.Neo4jDriverType.MIGRATION;
 import static com.backend.users.neo4j.Neo4jDriverType.READER;
 import static com.backend.users.neo4j.Neo4jDriverType.WRITER;
 import static java.lang.String.format;
@@ -8,23 +7,28 @@ import static java.lang.String.format;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.backend.core.exceptions.ConfigurationException;
 import com.backend.users.neo4j.settings.Neo4jConnectionSettings;
 import com.backend.users.neo4j.settings.Neo4jConnectionSettingsProvider;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class Neo4jDriverFactory {
-  private final Neo4jConnectionSettingsProvider neo4jConnectionSettingsProvider;
+  private final Neo4jConnectionSettingsProvider connectionProvider;
+
+  public Neo4jDriverFactory(
+      @Qualifier("delegatingNeo4jConnectionSettingsProvider")
+          Neo4jConnectionSettingsProvider connectionProvider) {
+    this.connectionProvider = connectionProvider;
+  }
 
   public Driver getDriver(String driverType, Config commonConfig) {
-    Neo4jConnectionSettings settings = neo4jConnectionSettingsProvider.provide();
+    Neo4jConnectionSettings settings = connectionProvider.provide();
     Neo4jPropertiesHolder driverPropertiesHolder =
         initializePropertiesHolder(settings, commonConfig, driverType);
 
@@ -41,32 +45,26 @@ public class Neo4jDriverFactory {
   }
 
   private Neo4jPropertiesHolder initializePropertiesHolder(
-      Neo4jConnectionSettings neo4jConnectionSettings, Config commonConfig, String driverType) {
+      Neo4jConnectionSettings settings, Config commonConfig, String driverType) {
 
     Neo4jPropertiesHolder.Neo4jPropertiesHolderBuilder builder =
         Neo4jPropertiesHolder.builder()
             .driverType(driverType)
             .config(commonConfig)
-            .database(neo4jConnectionSettings.getDatabase());
+            .database(settings.getDatabase());
 
     return switch (driverType) {
       case READER -> builder
-          .host(neo4jConnectionSettings.getReaderHost())
-          .port(neo4jConnectionSettings.getReaderPort())
-          .username(neo4jConnectionSettings.getReaderUsername())
-          .password(neo4jConnectionSettings.getReaderPassword())
+          .host(settings.getReaderHost())
+          .port(settings.getReaderPort())
+          .username(settings.getReaderUsername())
+          .password(settings.getReaderPassword())
           .build();
       case WRITER -> builder
-          .host(neo4jConnectionSettings.getWriterHost())
-          .port(neo4jConnectionSettings.getWriterPort())
-          .username(neo4jConnectionSettings.getWriterUsername())
-          .password(neo4jConnectionSettings.getWriterPassword())
-          .build();
-      case MIGRATION -> builder
-          .host(neo4jConnectionSettings.getWriterHost())
-          .port(neo4jConnectionSettings.getWriterPort())
-          .username(neo4jConnectionSettings.getMigrationUsername())
-          .password(neo4jConnectionSettings.getMigrationPassword())
+          .host(settings.getWriterHost())
+          .port(settings.getWriterPort())
+          .username(settings.getWriterUsername())
+          .password(settings.getWriterPassword())
           .build();
       default -> throw new ConfigurationException(
           format("Unsupported Neo4j Driver type supplied [%s]", driverType));

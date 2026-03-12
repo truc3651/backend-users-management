@@ -42,12 +42,12 @@ public class JwtUtil {
     Date expirationDate = new Date(now.getTime() + expiration);
 
     return Jwts.builder()
-            .claims(claims)
-            .subject(subject)
-            .issuedAt(now)
-            .expiration(expirationDate)
-            .signWith(getSigningKey())
-            .compact();
+        .claims(claims)
+        .subject(subject)
+        .issuedAt(now)
+        .expiration(expirationDate)
+        .signWith(getSigningKey())
+        .compact();
   }
 
   public Date extractExpiration(String token) {

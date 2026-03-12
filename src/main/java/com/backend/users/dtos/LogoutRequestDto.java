@@ -7,5 +7,5 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class LogoutRequestDto {
-    @NotBlank private String refreshToken;
+  @NotBlank private String refreshToken;
 }

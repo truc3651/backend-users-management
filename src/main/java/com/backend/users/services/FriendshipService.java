@@ -75,10 +75,10 @@ public class FriendshipService {
               fr.setStatus(FriendRequestStatus.ACCEPTED);
               return friendRequestRepository
                   .save(fr)
-                  .then(Mono.when(
+                  .then(
+                      Mono.when(
                           evictFriendsCaches(fr.getRequesterId(), currentUserId),
-                          evictSuggestionsCaches(fr.getRequesterId(), currentUserId)
-                  ));
+                          evictSuggestionsCaches(fr.getRequesterId(), currentUserId)));
             });
   }
 
@@ -123,9 +123,7 @@ public class FriendshipService {
   }
 
   public Flux<UserDto> getFriends(Long userId) {
-    return friendsCache
-        .get(userId, this::loadFriendsFromNeo4j)
-        .flatMapMany(Flux::fromIterable);
+    return friendsCache.get(userId, this::loadFriendsFromNeo4j).flatMapMany(Flux::fromIterable);
   }
 
   public Flux<UserDto> getFriendSuggestions(Long userId) {
@@ -134,58 +132,55 @@ public class FriendshipService {
         .flatMapMany(Flux::fromIterable);
   }
 
-    private Mono<FriendRequestEntity> findFriendRequestById(Long id) {
-        return friendRequestRepository
-                .findById(id)
-                .switchIfEmpty(Mono.error(new ResourceNotFoundException(id, FRIEND_REQUEST_RESOURCE_NAME)));
+  private Mono<FriendRequestEntity> findFriendRequestById(Long id) {
+    return friendRequestRepository
+        .findById(id)
+        .switchIfEmpty(Mono.error(new ResourceNotFoundException(id, FRIEND_REQUEST_RESOURCE_NAME)));
+  }
+
+  private Mono<Void> validateSending(Long requesterId, Long addresseeId) {
+    if (requesterId.equals(addresseeId)) {
+      return Mono.error(new ValidationException("Cannot send friend request to yourself"));
     }
 
-    private Mono<Void> validateSending(Long requesterId, Long addresseeId) {
-        if (requesterId.equals(addresseeId)) {
-            return Mono.error(new ValidationException("Cannot send friend request to yourself"));
-        }
+    return friendRequestRepository
+        .areFriends(requesterId, addresseeId)
+        .flatMap(
+            areFriends -> {
+              if (areFriends) {
+                return Mono.error(new ValidationException("Users are already friends"));
+              }
+              return friendRequestRepository
+                  .findByIdAndStatus(requesterId, addresseeId, FriendRequestStatus.PENDING.name())
+                  .flatMap(
+                      fr ->
+                          Mono.<Void>error(new ValidationException("Friend request already sent")))
+                  .switchIfEmpty(Mono.empty());
+            });
+  }
 
-        return friendRequestRepository
-                .areFriends(requesterId, addresseeId)
-                .flatMap(
-                        areFriends -> {
-                            if (areFriends) {
-                                return Mono.error(new ValidationException("Users are already friends"));
-                            }
-                            return friendRequestRepository
-                                    .findByIdAndStatus(requesterId, addresseeId, FriendRequestStatus.PENDING.name())
-                                    .flatMap(
-                                            fr ->
-                                                    Mono.<Void>error(new ValidationException("Friend request already sent")))
-                                    .switchIfEmpty(Mono.empty());
-                        });
+  private void validateDefaultOperations(FriendRequestEntity fr, Long addresseeId) {
+    if (!fr.getAddresseeId().equals(addresseeId)) {
+      throw new ForbiddenException("You are not authorized to operate this request");
     }
+    validateFriendRequestPending(fr);
+  }
 
-    private void validateDefaultOperations(FriendRequestEntity fr, Long addresseeId) {
-        if (!fr.getAddresseeId().equals(addresseeId)) {
-            throw new ForbiddenException("You are not authorized to operate this request");
-        }
-        validateFriendRequestPending(fr);
+  private void validateCanceling(FriendRequestEntity fr, Long requesterId) {
+    if (!fr.getRequesterId().equals(requesterId)) {
+      throw new ForbiddenException("You are not authorized to cancel this request");
     }
+    validateFriendRequestPending(fr);
+  }
 
-    private void validateCanceling(FriendRequestEntity fr, Long requesterId) {
-        if (!fr.getRequesterId().equals(requesterId)) {
-            throw new ForbiddenException("You are not authorized to cancel this request");
-        }
-        validateFriendRequestPending(fr);
+  private void validateFriendRequestPending(FriendRequestEntity friendRequest) {
+    if (!FriendRequestStatus.PENDING.equals(friendRequest.getStatus())) {
+      throw new ValidationException("Friend request is not pending");
     }
-
-    private void validateFriendRequestPending(FriendRequestEntity friendRequest) {
-        if (!FriendRequestStatus.PENDING.equals(friendRequest.getStatus())) {
-            throw new ValidationException("Friend request is not pending");
-        }
-    }
+  }
 
   private Mono<List<UserDto>> loadFriendsFromNeo4j(Long id) {
-    return userNodeRepository
-        .findFriendsByUserId(id)
-        .map(friendMapper::toUserDto)
-        .collectList();
+    return userNodeRepository.findFriendsByUserId(id).map(friendMapper::toUserDto).collectList();
   }
 
   private Mono<List<UserDto>> loadSuggestionsFromNeo4j(Long id) {
@@ -196,16 +191,10 @@ public class FriendshipService {
   }
 
   private Mono<Void> evictFriendsCaches(Long userId1, Long userId2) {
-      return Mono.when(
-          friendsCache.evict(userId1),
-          friendsCache.evict(userId2)
-      );
+    return Mono.when(friendsCache.evict(userId1), friendsCache.evict(userId2));
   }
 
   private Mono<Void> evictSuggestionsCaches(Long userId1, Long userId2) {
-      return Mono.when(
-              suggestionsCache.evict(userId1),
-              suggestionsCache.evict(userId2)
-      );
+    return Mono.when(suggestionsCache.evict(userId1), suggestionsCache.evict(userId2));
   }
 }

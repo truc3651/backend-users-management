@@ -24,11 +24,9 @@ public class UserEntity implements UserDetails {
   private String email;
   private String password;
 
-  @CreatedDate
-  private OffsetDateTime createdAt;
+  @CreatedDate private OffsetDateTime createdAt;
 
-  @LastModifiedDate
-  private OffsetDateTime updatedAt;
+  @LastModifiedDate private OffsetDateTime updatedAt;
 
   @Override
   public String getUsername() {

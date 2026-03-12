@@ -5,7 +5,6 @@ import java.time.OffsetDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import com.backend.users.enums.FriendRequestStatus;
@@ -24,9 +23,7 @@ public class FriendRequestEntity {
   private Long addresseeId;
   private FriendRequestStatus status;
 
-  @CreatedDate
-  private OffsetDateTime createdAt;
+  @CreatedDate private OffsetDateTime createdAt;
 
-  @LastModifiedDate
-  private OffsetDateTime updatedAt;
+  @LastModifiedDate private OffsetDateTime updatedAt;
 }

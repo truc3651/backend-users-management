@@ -26,7 +26,7 @@ import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundExce
 public class Neo4jConnectionSettingsProviderImplAWSSecret
     implements Neo4jConnectionSettingsProvider {
   private static final String AWS_NEO4J_SECRET_NAME_PARAM = "AWS_NEO4J_SECRET_NAME";
-  private static final String AWS_NEO4J_SECRET_REGION_PARAM = "AWS_NEO4J_SECRET_REGION";
+  private static final String AWS_REGION = "AWS_REGION";
 
   private final Environment environment;
   private final SecretsManagerClient secretsManagerClient;
@@ -40,9 +40,7 @@ public class Neo4jConnectionSettingsProviderImplAWSSecret
   }
 
   private SecretsManagerClient initializeSecretsManagerClient() {
-    String region =
-        assertRequiredEnvironmentParam(
-            AWS_NEO4J_SECRET_REGION_PARAM, "AWS Region for Neo4j Secret is not defined");
+    String region = assertRequiredEnvironmentParam(AWS_REGION, "AWS Region is not defined");
     return SecretsManagerClient.builder().region(Region.of(region)).build();
   }
 

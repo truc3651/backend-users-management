@@ -1,5 +1,6 @@
 package com.backend.users.graph;
 
+import static org.springframework.data.neo4j.core.schema.Relationship.Direction.INCOMING;
 import static org.springframework.data.neo4j.core.schema.Relationship.Direction.OUTGOING;
 
 import java.util.ArrayList;
@@ -26,6 +27,9 @@ public class UserNode {
 
   @Relationship(type = "FOLLOWS", direction = OUTGOING)
   private List<FollowsRelationship> following = new ArrayList<>();
+
+  @Relationship(type = "FOLLOWS", direction = INCOMING)
+  private List<FollowedByRelationship> followers = new ArrayList<>();
 
   @Relationship(type = "BLOCKS", direction = OUTGOING)
   private List<BlocksRelationship> blocked = new ArrayList<>();
