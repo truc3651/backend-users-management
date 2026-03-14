@@ -42,10 +42,7 @@ class AuthControllerTest extends BaseTest {
           .expectStatus()
           .isOk();
 
-      UserEntity savedUser =
-          transactionalOperator
-              .transactional(userRepository.findByEmail("newuser@test.com"))
-              .block();
+      UserEntity savedUser = userRepository.findByEmail("newuser@test.com").block();
       assertThat(savedUser).isNotNull();
       assertThat(savedUser.getEmail()).isEqualTo("newuser@test.com");
     }
@@ -495,9 +492,7 @@ class AuthControllerTest extends BaseTest {
           .isOk();
 
       RefreshTokenEntity deletedToken =
-          transactionalOperator
-              .transactional(refreshTokenRepository.findByToken(refreshToken.getToken()))
-              .block();
+          refreshTokenRepository.findByToken(refreshToken.getToken()).block();
       assertThat(deletedToken).isNull();
     }
 

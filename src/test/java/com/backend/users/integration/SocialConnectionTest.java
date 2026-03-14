@@ -100,7 +100,7 @@ class SocialConnectionTest extends BaseTest {
       followsC.setCreatedAt(OffsetDateTime.now());
       nodeA.getFollowing().add(followsC);
 
-      transactionalOperator.transactional(userNodeRepository.save(nodeA)).block();
+      userNodeRepository.save(nodeA).block();
     }
 
     @Test

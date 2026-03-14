@@ -47,10 +47,8 @@ class FriendshipTest extends BaseTest {
           .isOk();
 
       FriendRequestEntity savedRequest =
-          transactionalOperator
-              .transactional(
-                  friendRequestRepository.findByIdAndStatus(
-                      userA.getId(), userB.getId(), FriendRequestStatus.PENDING.name()))
+          friendRequestRepository
+              .findByIdAndStatus(userA.getId(), userB.getId(), FriendRequestStatus.PENDING.name())
               .block();
 
       assertThat(savedRequest).isNotNull();
@@ -162,9 +160,7 @@ class FriendshipTest extends BaseTest {
           .isOk();
 
       FriendRequestEntity updatedRequest =
-          transactionalOperator
-              .transactional(friendRequestRepository.findById(pendingRequest.getId()))
-              .block();
+          friendRequestRepository.findById(pendingRequest.getId()).block();
 
       assertThat(updatedRequest.getStatus()).isEqualTo(FriendRequestStatus.ACCEPTED);
     }

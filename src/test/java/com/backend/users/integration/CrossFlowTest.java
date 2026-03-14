@@ -57,10 +57,7 @@ class CrossFlowTest extends BaseTest {
           .expectStatus()
           .isOk();
 
-      FriendRequestEntity updated =
-          transactionalOperator
-              .transactional(friendRequestRepository.findById(pending.getId()))
-              .block();
+      FriendRequestEntity updated = friendRequestRepository.findById(pending.getId()).block();
       assertThat(updated.getStatus()).isEqualTo(FriendRequestStatus.ACCEPTED);
     }
 
@@ -77,10 +74,7 @@ class CrossFlowTest extends BaseTest {
           .expectStatus()
           .isOk();
 
-      FriendRequestEntity updated =
-          transactionalOperator
-              .transactional(friendRequestRepository.findById(pending.getId()))
-              .block();
+      FriendRequestEntity updated = friendRequestRepository.findById(pending.getId()).block();
       assertThat(updated.getStatus()).isEqualTo(FriendRequestStatus.REJECTED);
     }
 
@@ -97,10 +91,7 @@ class CrossFlowTest extends BaseTest {
           .expectStatus()
           .isOk();
 
-      FriendRequestEntity updated =
-          transactionalOperator
-              .transactional(friendRequestRepository.findById(pending.getId()))
-              .block();
+      FriendRequestEntity updated = friendRequestRepository.findById(pending.getId()).block();
       assertThat(updated.getStatus()).isEqualTo(FriendRequestStatus.CANCELLED);
     }
 

@@ -25,6 +25,9 @@ repositories {
             username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
             password = project.findProperty("gpr.token") ?: System.getenv("TOKEN")
         }
+        content {
+            includeGroup "com.truc2001"
+        }
     }
 }
 
@@ -91,15 +94,16 @@ dependencies {
 
     // Testcontainers
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-    testImplementation 'org.testcontainers:testcontainers:1.21.0'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
-    testImplementation 'org.testcontainers:junit-jupiter:1.21.0'
-    testImplementation 'org.testcontainers:postgresql:1.21.0'
-    testImplementation 'org.testcontainers:neo4j:1.21.0'
-    testImplementation 'org.testcontainers:kafka:1.21.0'
     testImplementation 'com.redis:testcontainers-redis:2.2.0'
-    testImplementation 'org.testcontainers:localstack:1.21.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    testImplementation 'org.testcontainers:testcontainers:2.0.3'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.3'
+    testImplementation 'org.testcontainers:testcontainers-postgresql:2.0.3'
+    testImplementation 'org.testcontainers:testcontainers-neo4j:2.0.3'
+    testImplementation 'org.testcontainers:testcontainers-kafka:2.0.3'
+    testImplementation 'org.testcontainers:testcontainers-localstack:2.0.3'
 }
 
 tasks.named('test') {
