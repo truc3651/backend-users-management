@@ -1,6 +1,8 @@
 ENVIRONMENT: test
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: backend-users-test
   flyway:
@@ -9,6 +11,7 @@ spring:
     schemas: users
 
 app:
+  domain: http://localhost:8080
   caches:
     user:
       key-prefix: "test:user:"
@@ -19,3 +22,22 @@ app:
     suggestions:
       key-prefix: "test:suggestions:"
       ttl: 1m
+
+aws:
+  ses:
+    sender-email: test@example.com
+
+web:
+  security:
+    open-paths:
+      - pattern: /v1/api/auth/**
+
+jwt:
+  secret: fgDIbNgYYUG9fGaMBzMUqdmGmAMfGt8gdLJcVmdh38E=
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
+  reset-token-expiration: 900000
+
+services:
+  users-management:
+    url: http://localhost:8080

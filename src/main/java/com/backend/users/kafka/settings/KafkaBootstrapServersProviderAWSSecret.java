@@ -1,11 +1,10 @@
-package com.backend.users.neo4j.settings;
+package com.backend.users.kafka.settings;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -25,22 +24,29 @@ import software.amazon.awssdk.services.secretsmanager.model.InvalidRequestExcept
 import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundException;
 
 @Component
-@ConditionalOnProperty(name = "AWS_REGION")
 @Profile("!localdev & !test")
-public class Neo4jConnectionSettingsProviderImplAWSSecret
-    implements Neo4jConnectionSettingsProvider {
-  private static final String AWS_NEO4J_SECRET_NAME_PARAM = "AWS_NEO4J_SECRET_NAME";
+public class KafkaBootstrapServersProviderAWSSecret implements KafkaBootstrapServersProvider {
+  private static final String AWS_KAFKA_SECRET_NAME_PARAM = "AWS_KAFKA_SECRET_NAME";
   private static final String AWS_REGION = "AWS_REGION";
 
   private final Environment environment;
   private final SecretsManagerClient secretsManagerClient;
   private final ObjectMapper objectMapper;
 
-  public Neo4jConnectionSettingsProviderImplAWSSecret(
+  public KafkaBootstrapServersProviderAWSSecret(
       Environment environment, ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
     this.environment = environment;
     this.secretsManagerClient = initializeSecretsManagerClient();
+  }
+
+  @Override
+  public String provide() {
+    try {
+      return objectMapper.readValue(getSecretJson(), String.class);
+    } catch (IOException e) {
+      throw new AWSException(e);
+    }
   }
 
   private SecretsManagerClient initializeSecretsManagerClient() {
@@ -48,19 +54,15 @@ public class Neo4jConnectionSettingsProviderImplAWSSecret
     return SecretsManagerClient.builder().region(Region.of(region)).build();
   }
 
-  @Override
-  public Neo4jConnectionSettings provide() {
-    try {
-      return objectMapper.readValue(getSecretJson(), Neo4jConnectionSettings.class);
-    } catch (IOException e) {
-      throw new AWSException(e);
-    }
+  private String assertRequiredEnvironmentParam(String paramName, String errorMsg) {
+    return Optional.ofNullable(environment.getProperty(paramName))
+        .orElseThrow(() -> new ConfigurationException(errorMsg));
   }
 
   private String getSecretJson() {
     String secretName =
         assertRequiredEnvironmentParam(
-            AWS_NEO4J_SECRET_NAME_PARAM, "AWS Neo4j Secret Name is not defined");
+            AWS_KAFKA_SECRET_NAME_PARAM, "AWS Kafka Secret Name is not defined");
 
     try {
       GetSecretValueRequest getSecretValueRequest =
@@ -77,10 +79,5 @@ public class Neo4jConnectionSettingsProviderImplAWSSecret
         | ResourceNotFoundException e) {
       throw new AWSException(e);
     }
-  }
-
-  private String assertRequiredEnvironmentParam(String paramName, String errorMsg) {
-    return Optional.ofNullable(environment.getProperty(paramName))
-        .orElseThrow(() -> new ConfigurationException(errorMsg));
   }
 }

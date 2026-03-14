@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Neo4jPropertiesHolder {
-  private static final String NEO4J_URI_TEMPLATE = "bolt://{0}:{1}";
+  private static final String NEO4J_URI_TEMPLATE = "neo4j://{0}:{1}";
 
   private String driverType;
   private Config config;

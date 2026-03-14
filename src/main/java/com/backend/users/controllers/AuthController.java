@@ -7,6 +7,9 @@ import com.backend.core.dtos.ValidateTokenResponseDto;
 import com.backend.users.dtos.ForgotPasswordRequestDto;
 import com.backend.users.dtos.LoginRequestDto;
 import com.backend.users.dtos.LoginResponseDto;
+import com.backend.users.dtos.LogoutRequestDto;
+import com.backend.users.dtos.RefreshTokenRequestDto;
+import com.backend.users.dtos.RefreshTokenResponseDto;
 import com.backend.users.dtos.RegisterRequestDto;
 import com.backend.users.dtos.ResetPasswordRequestDto;
 import com.backend.users.services.AuthService;
@@ -45,5 +48,15 @@ public class AuthController {
   public Mono<ValidateTokenResponseDto> validateToken(
       @Valid @RequestBody ValidateTokenRequestDto request) {
     return authService.validateToken(request);
+  }
+
+  @PostMapping("/refresh")
+  public Mono<RefreshTokenResponseDto> refresh(@Valid @RequestBody RefreshTokenRequestDto request) {
+    return authService.refreshAccessToken(request);
+  }
+
+  @PostMapping("/logout")
+  public Mono<Void> logout(@Valid @RequestBody LogoutRequestDto request) {
+    return authService.logout(request);
   }
 }

@@ -1,243 +1,241 @@
 package com.backend.users.integration;
 
-import org.junit.jupiter.api.DisplayName;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@DisplayName("Friendship E2E Tests")
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
+import com.backend.users.dtos.SendFriendRequestDto;
+import com.backend.users.entities.FriendRequestEntity;
+import com.backend.users.entities.UserEntity;
+import com.backend.users.enums.FriendRequestStatus;
+
 class FriendshipTest extends BaseTest {
+  private UserEntity userA;
+  private UserEntity userB;
+  private UserEntity userC;
 
-  //  private UserEntity userA;
-  //  private UserEntity userB;
-  //  private UserEntity userC;
-  //
-  //  @BeforeEach
-  //  void setUp() {
-  //    userA = createUser("userA@test.com");
-  //    userB = createUser("userB@test.com");
-  //    userC = createUser("userC@test.com");
-  //
-  //    createUserNode(userA.getId(), userA.getEmail());
-  //    createUserNode(userB.getId(), userB.getEmail());
-  //    createUserNode(userC.getId(), userC.getEmail());
-  //  }
-  //
-  //  @Nested
-  //  @DisplayName("Send Friend Request")
-  //  class SendFriendRequestTests {
-  //
-  //    @Test
-  //    @DisplayName("FR-HP-01: Should successfully send friend request")
-  //    void shouldSendFriendRequest() {
-  //      SendFriendRequestDto request = new SendFriendRequestDto();
-  //      request.setAddresseeId(userB.getId());
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests")
-  //          .header("Authorization", "Bearer " + generateToken(userA))
-  //          .contentType(MediaType.APPLICATION_JSON)
-  //          .bodyValue(request)
-  //          .exchange()
-  //          .expectStatus()
-  //          .isOk();
-  //
-  //      FriendRequestEntity savedRequest =
-  //          friendRequestRepository
-  //              .findByIdAndStatus(userA.getId(), userB.getId(),
-  // FriendRequestStatus.PENDING.name())
-  //              .block();
-  //
-  //      assertThat(savedRequest).isNotNull();
-  //      assertThat(savedRequest.getStatus()).isEqualTo(FriendRequestStatus.PENDING);
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-01: Should reject sending request to self")
-  //    void shouldRejectSendingRequestToSelf() {
-  //      SendFriendRequestDto request = new SendFriendRequestDto();
-  //      request.setAddresseeId(userA.getId());
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests")
-  //          .header("Authorization", "Bearer " + generateToken(userA))
-  //          .contentType(MediaType.APPLICATION_JSON)
-  //          .bodyValue(request)
-  //          .exchange()
-  //          .expectStatus()
-  //          .isBadRequest();
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-02: Should reject request when already friends")
-  //    void shouldRejectWhenAlreadyFriends() {
-  //      createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.ACCEPTED);
-  //
-  //      SendFriendRequestDto request = new SendFriendRequestDto();
-  //      request.setAddresseeId(userB.getId());
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests")
-  //          .header("Authorization", "Bearer " + generateToken(userA))
-  //          .contentType(MediaType.APPLICATION_JSON)
-  //          .bodyValue(request)
-  //          .exchange()
-  //          .expectStatus()
-  //          .isBadRequest();
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-03: Should reject duplicate pending request")
-  //    void shouldRejectDuplicatePendingRequest() {
-  //      createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.PENDING);
-  //
-  //      SendFriendRequestDto request = new SendFriendRequestDto();
-  //      request.setAddresseeId(userB.getId());
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests")
-  //          .header("Authorization", "Bearer " + generateToken(userA))
-  //          .contentType(MediaType.APPLICATION_JSON)
-  //          .bodyValue(request)
-  //          .exchange()
-  //          .expectStatus()
-  //          .isBadRequest();
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-04: Should return 404 for non-existent addressee")
-  //    void shouldReturn404ForNonExistentAddressee() {
-  //      SendFriendRequestDto request = new SendFriendRequestDto();
-  //      request.setAddresseeId(99999L);
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests")
-  //          .header("Authorization", "Bearer " + generateToken(userA))
-  //          .contentType(MediaType.APPLICATION_JSON)
-  //          .bodyValue(request)
-  //          .exchange()
-  //          .expectStatus()
-  //          .isNotFound();
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-13: Should reject bidirectional pending request")
-  //    void shouldRejectBidirectionalPendingRequest() {
-  //      createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.PENDING);
-  //
-  //      SendFriendRequestDto request = new SendFriendRequestDto();
-  //      request.setAddresseeId(userA.getId());
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests")
-  //          .header("Authorization", "Bearer " + generateToken(userB))
-  //          .contentType(MediaType.APPLICATION_JSON)
-  //          .bodyValue(request)
-  //          .exchange()
-  //          .expectStatus()
-  //          .isBadRequest();
-  //    }
-  //  }
-  //
-  //  @Nested
-  //  @DisplayName("Accept Friend Request")
-  //  class AcceptFriendRequestTests {
-  //
-  //    @Test
-  //    @DisplayName("FR-HP-02: Should successfully accept friend request")
-  //    void shouldAcceptFriendRequest() {
-  //      FriendRequestEntity pendingRequest =
-  //          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.PENDING);
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests/{requestId}/accept", pendingRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userB))
-  //          .exchange()
-  //          .expectStatus()
-  //          .isOk();
-  //
-  //      FriendRequestEntity updatedRequest =
-  //          friendRequestRepository.findById(pendingRequest.getId()).block();
-  //
-  //      assertThat(updatedRequest.getStatus()).isEqualTo(FriendRequestStatus.ACCEPTED);
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-05: Should return 404 for non-existent request")
-  //    void shouldReturn404ForNonExistentRequest() {
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests/{requestId}/accept", 99999L)
-  //          .header("Authorization", "Bearer " + generateToken(userB))
-  //          .exchange()
-  //          .expectStatus()
-  //          .isNotFound();
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-06: Should reject accepting already accepted request")
-  //    void shouldRejectAcceptingAlreadyAcceptedRequest() {
-  //      FriendRequestEntity acceptedRequest =
-  //          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.ACCEPTED);
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests/{requestId}/accept", acceptedRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userB))
-  //          .exchange()
-  //          .expectStatus()
-  //          .isBadRequest();
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-07: Should reject accepting rejected request")
-  //    void shouldRejectAcceptingRejectedRequest() {
-  //      FriendRequestEntity rejectedRequest =
-  //          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.REJECTED);
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests/{requestId}/accept", rejectedRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userB))
-  //          .exchange()
-  //          .expectStatus()
-  //          .isBadRequest();
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-08: Should reject accepting cancelled request")
-  //    void shouldRejectAcceptingCancelledRequest() {
-  //      FriendRequestEntity cancelledRequest =
-  //          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.CANCELLED);
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests/{requestId}/accept", cancelledRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userB))
-  //          .exchange()
-  //          .expectStatus()
-  //          .isBadRequest();
-  //    }
-  //
-  //    @Test
-  //    @DisplayName("FR-EC-09: Should forbid accepting as wrong user")
-  //    void shouldForbidAcceptingAsWrongUser() {
-  //      FriendRequestEntity pendingRequest =
-  //          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.PENDING);
-  //
-  //      webTestClient
-  //          .post()
-  //          .uri("/v1/api/friendships/requests/{requestId}/accept", pendingRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userC))
-  //          .exchange()
-  //          .expectStatus()
-  //          .isForbidden();
-  //    }
-  //  }
+  @BeforeEach
+  void setUp() {
+    userA = createUser("userA@test.com");
+    userB = createUser("userB@test.com");
+    userC = createUser("userC@test.com");
+
+    createUserNode(userA.getId(), userA.getEmail());
+    createUserNode(userB.getId(), userB.getEmail());
+    createUserNode(userC.getId(), userC.getEmail());
+  }
+
+  @Nested
+  class SendFriendRequestTests {
+    @Test
+    void shouldSendFriendRequestSuccess() {
+      SendFriendRequestDto request = new SendFriendRequestDto();
+      request.setAddresseeId(userB.getId());
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests")
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userA))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isOk();
+
+      FriendRequestEntity savedRequest =
+          transactionalOperator
+              .transactional(
+                  friendRequestRepository.findByIdAndStatus(
+                      userA.getId(), userB.getId(), FriendRequestStatus.PENDING.name()))
+              .block();
+
+      assertThat(savedRequest).isNotNull();
+      assertThat(savedRequest.getStatus()).isEqualTo(FriendRequestStatus.PENDING);
+      assertThat(savedRequest.getRequesterId()).isEqualTo(userA.getId());
+      assertThat(savedRequest.getAddresseeId()).isEqualTo(userB.getId());
+    }
+
+    @Test
+    public void shouldRejectSendingRequestToSelf() {
+      SendFriendRequestDto request = new SendFriendRequestDto();
+      request.setAddresseeId(userA.getId());
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests")
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userA))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isBadRequest();
+    }
+
+    @Test
+    void shouldRejectWhenAlreadyFriends() {
+      createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.ACCEPTED);
+
+      SendFriendRequestDto request = new SendFriendRequestDto();
+      request.setAddresseeId(userB.getId());
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests")
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userA))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isBadRequest();
+    }
+
+    @Test
+    void shouldRejectDuplicatePendingRequest() {
+      createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.PENDING);
+
+      SendFriendRequestDto request = new SendFriendRequestDto();
+      request.setAddresseeId(userB.getId());
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests")
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userA))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isBadRequest();
+    }
+
+    @Test
+    void shouldReturn404ForNonExistentAddressee() {
+      SendFriendRequestDto request = new SendFriendRequestDto();
+      request.setAddresseeId(99999L);
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests")
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userA))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isNotFound();
+    }
+
+    @Test
+    void shouldRejectBidirectionalPendingRequest() {
+      createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.PENDING);
+
+      SendFriendRequestDto request = new SendFriendRequestDto();
+      request.setAddresseeId(userA.getId());
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests")
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isBadRequest();
+    }
+  }
+
+  @Nested
+  class AcceptFriendRequestTests {
+    @Test
+    void shouldAcceptFriendRequest() {
+      FriendRequestEntity pendingRequest =
+          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.PENDING);
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests/{requestId}/accept", pendingRequest.getId())
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
+          .exchange()
+          .expectStatus()
+          .isOk();
+
+      FriendRequestEntity updatedRequest =
+          transactionalOperator
+              .transactional(friendRequestRepository.findById(pendingRequest.getId()))
+              .block();
+
+      assertThat(updatedRequest.getStatus()).isEqualTo(FriendRequestStatus.ACCEPTED);
+    }
+
+    @Test
+    void shouldReturn404ForNonExistentRequest() {
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests/{requestId}/accept", 99999L)
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
+          .exchange()
+          .expectStatus()
+          .isNotFound();
+    }
+
+    @Test
+    void shouldRejectAcceptingAlreadyAcceptedRequest() {
+      FriendRequestEntity acceptedRequest =
+          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.ACCEPTED);
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests/{requestId}/accept", acceptedRequest.getId())
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
+          .exchange()
+          .expectStatus()
+          .isBadRequest();
+    }
+
+    @Test
+    void shouldRejectAcceptingRejectedRequest() {
+      FriendRequestEntity rejectedRequest =
+          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.REJECTED);
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests/{requestId}/accept", rejectedRequest.getId())
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
+          .exchange()
+          .expectStatus()
+          .isBadRequest();
+    }
+
+    @Test
+    void shouldRejectAcceptingCancelledRequest() {
+      FriendRequestEntity cancelledRequest =
+          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.CANCELLED);
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests/{requestId}/accept", cancelledRequest.getId())
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
+          .exchange()
+          .expectStatus()
+          .isBadRequest();
+    }
+
+    @Test
+    void shouldForbidAcceptingAsWrongUser() {
+      FriendRequestEntity pendingRequest =
+          createFriendRequest(userA.getId(), userB.getId(), FriendRequestStatus.PENDING);
+
+      webTestClient
+          .post()
+          .uri("/v1/api/friendships/requests/{requestId}/accept", pendingRequest.getId())
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userC))
+          .exchange()
+          .expectStatus()
+          .isForbidden();
+    }
+  }
   //
   //  @Nested
   //  @DisplayName("Reject Friend Request")
@@ -252,7 +250,7 @@ class FriendshipTest extends BaseTest {
   //      webTestClient
   //          .post()
   //          .uri("/v1/api/friendships/requests/{requestId}/reject", pendingRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userB))
+  //          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
   //          .exchange()
   //          .expectStatus()
   //          .isOk();
@@ -272,7 +270,7 @@ class FriendshipTest extends BaseTest {
   //      webTestClient
   //          .post()
   //          .uri("/v1/api/friendships/requests/{requestId}/reject", pendingRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userA))
+  //          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userA))
   //          .exchange()
   //          .expectStatus()
   //          .isForbidden();
@@ -292,7 +290,7 @@ class FriendshipTest extends BaseTest {
   //      webTestClient
   //          .post()
   //          .uri("/v1/api/friendships/requests/{requestId}/cancel", pendingRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userA))
+  //          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userA))
   //          .exchange()
   //          .expectStatus()
   //          .isOk();
@@ -312,7 +310,7 @@ class FriendshipTest extends BaseTest {
   //      webTestClient
   //          .post()
   //          .uri("/v1/api/friendships/requests/{requestId}/cancel", pendingRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userB))
+  //          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
   //          .exchange()
   //          .expectStatus()
   //          .isForbidden();
@@ -327,7 +325,7 @@ class FriendshipTest extends BaseTest {
   //      webTestClient
   //          .post()
   //          .uri("/v1/api/friendships/requests/{requestId}/cancel", acceptedRequest.getId())
-  //          .header("Authorization", "Bearer " + generateToken(userA))
+  //          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userA))
   //          .exchange()
   //          .expectStatus()
   //          .isBadRequest();
@@ -347,7 +345,7 @@ class FriendshipTest extends BaseTest {
   //      webTestClient
   //          .get()
   //          .uri("/v1/api/friendships/requests/pending")
-  //          .header("Authorization", "Bearer " + generateToken(userB))
+  //          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
   //          .exchange()
   //          .expectStatus()
   //          .isOk()
@@ -364,7 +362,7 @@ class FriendshipTest extends BaseTest {
   //      webTestClient
   //          .get()
   //          .uri("/v1/api/friendships/requests/sent")
-  //          .header("Authorization", "Bearer " + generateToken(userA))
+  //          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userA))
   //          .exchange()
   //          .expectStatus()
   //          .isOk()
@@ -381,7 +379,7 @@ class FriendshipTest extends BaseTest {
   //      webTestClient
   //          .get()
   //          .uri("/v1/api/friendships/requests/pending")
-  //          .header("Authorization", "Bearer " + generateToken(userB))
+  //          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
   //          .exchange()
   //          .expectStatus()
   //          .isOk()
@@ -414,7 +412,7 @@ class FriendshipTest extends BaseTest {
   //      webTestClient
   //          .get()
   //          .uri("/v1/api/friendships/requests/pending")
-  //          .header("Authorization", "Bearer " + generateToken(userB))
+  //          .header(HttpHeaders.AUTHORIZATION, "Bearer " + generateToken(userB))
   //          .exchange()
   //          .expectStatus()
   //          .isOk()

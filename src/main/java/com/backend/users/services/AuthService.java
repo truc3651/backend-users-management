@@ -13,7 +13,6 @@ import com.backend.core.dtos.UserDto;
 import com.backend.core.dtos.ValidateTokenRequestDto;
 import com.backend.core.dtos.ValidateTokenResponseDto;
 import com.backend.core.exceptions.ValidationException;
-import com.backend.users.dtos.ChangePasswordRequestDto;
 import com.backend.users.dtos.ForgotPasswordRequestDto;
 import com.backend.users.dtos.LoginRequestDto;
 import com.backend.users.dtos.LoginResponseDto;
@@ -98,6 +97,7 @@ public class AuthService {
         .then();
   }
 
+  @Transactional
   public Mono<Void> resetPassword(ResetPasswordRequestDto request) {
     return passwordResetService
         .validatePasswordResetToken(request.getToken())
@@ -127,27 +127,14 @@ public class AuthService {
           Map<String, Object> extractPayload = jwtUtil.extractPayload(token);
           UserDto user =
               new UserDto(
-                  (Long) extractPayload.get(JwtPayloadFields.ID.getName()),
-                  (String) extractPayload.get(JwtPayloadFields.EMAIL.getName()));
+                  Long.valueOf(extractPayload.get(JwtPayloadFields.ID.getName()).toString()),
+                  extractPayload.get(JwtPayloadFields.EMAIL.getName()).toString());
           return ValidateTokenResponseDto.builder()
               .valid(true)
               .expiresAt(jwtUtil.extractExpiration(token))
               .user(user)
               .build();
         });
-  }
-
-  @Transactional
-  public Mono<Void> changePassword(UserEntity currentUser, ChangePasswordRequestDto request) {
-    Long userId = currentUser.getId();
-    return userRepository
-        .findById(userId)
-        .flatMap(
-            user -> {
-              user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-              return userRepository.save(user);
-            })
-        .then();
   }
 
   @Transactional

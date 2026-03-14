@@ -10,14 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.backend.core.cache.ReactiveCacheTemplate;
+import com.backend.core.dtos.UserDto;
 import com.backend.core.exceptions.ForbiddenException;
 import com.backend.core.exceptions.ResourceNotFoundException;
 import com.backend.core.exceptions.ValidationException;
 import com.backend.users.dtos.FriendRequestResponseDto;
 import com.backend.users.dtos.SendFriendRequestDto;
-import com.backend.users.dtos.UserDto;
 import com.backend.users.entities.FriendRequestEntity;
-import com.backend.users.entities.UserEntity;
 import com.backend.users.enums.FriendRequestStatus;
 import com.backend.users.mappers.FriendMapper;
 import com.backend.users.repositories.FriendRequestRepository;
@@ -42,7 +41,8 @@ public class FriendshipService {
   private final ReactiveCacheTemplate<List<UserDto>> suggestionsCache;
 
   @Transactional
-  public Mono<Void> sendFriendRequest(UserEntity currentUser, SendFriendRequestDto request) {
+  public Mono<Void> sendFriendRequest(
+      com.backend.core.dtos.UserDto currentUser, SendFriendRequestDto request) {
     Long requesterId = currentUser.getId();
     Long addresseeId = request.getAddresseeId();
 
@@ -65,7 +65,7 @@ public class FriendshipService {
   }
 
   @Transactional
-  public Mono<Void> acceptFriendRequest(UserEntity currentUser, Long requestId) {
+  public Mono<Void> acceptFriendRequest(UserDto currentUser, Long requestId) {
     Long currentUserId = currentUser.getId();
 
     return findFriendRequestById(requestId)
@@ -83,7 +83,7 @@ public class FriendshipService {
   }
 
   @Transactional
-  public Mono<Void> rejectFriendRequest(UserEntity currentUser, Long requestId) {
+  public Mono<Void> rejectFriendRequest(UserDto currentUser, Long requestId) {
     Long currentUserId = currentUser.getId();
 
     return findFriendRequestById(requestId)
@@ -97,7 +97,7 @@ public class FriendshipService {
   }
 
   @Transactional
-  public Mono<Void> cancelFriendRequest(UserEntity currentUser, Long requestId) {
+  public Mono<Void> cancelFriendRequest(UserDto currentUser, Long requestId) {
     Long currentUserId = currentUser.getId();
 
     return findFriendRequestById(requestId)

@@ -3,9 +3,8 @@ package com.backend.users.controllers;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.backend.core.dtos.UserDto;
 import com.backend.core.web.page.Page;
-import com.backend.users.dtos.UserDto;
-import com.backend.users.entities.UserEntity;
 import com.backend.users.services.SocialConnectionService;
 
 import lombok.RequiredArgsConstructor;
@@ -19,19 +18,19 @@ public class SocialConnectionController {
 
   @PostMapping("/follow/{followedId}")
   public Mono<Void> follow(
-      @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long followedId) {
+      @AuthenticationPrincipal UserDto currentUser, @PathVariable Long followedId) {
     return socialConnectionService.follow(currentUser, followedId);
   }
 
   @PostMapping("/unfollow/{followedId}")
   public Mono<Void> unfollow(
-      @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long followedId) {
+      @AuthenticationPrincipal UserDto currentUser, @PathVariable Long followedId) {
     return socialConnectionService.unfollow(currentUser, followedId);
   }
 
   @GetMapping("/following")
   public Mono<Page<UserDto>> getFollowing(
-      @AuthenticationPrincipal UserEntity currentUser,
+      @AuthenticationPrincipal UserDto currentUser,
       @RequestParam Long offset,
       @RequestParam Integer pageSize) {
     return socialConnectionService.getFollowing(currentUser, offset, pageSize);
@@ -39,7 +38,7 @@ public class SocialConnectionController {
 
   @GetMapping("/followers")
   public Mono<Page<UserDto>> getFollowers(
-      @AuthenticationPrincipal UserEntity currentUser,
+      @AuthenticationPrincipal UserDto currentUser,
       @RequestParam Long offset,
       @RequestParam Integer pageSize) {
     return socialConnectionService.getFollowers(currentUser.getId(), offset, pageSize);
@@ -47,19 +46,19 @@ public class SocialConnectionController {
 
   @PostMapping("/block/{blockedId}")
   public Mono<Void> block(
-      @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long blockedId) {
+      @AuthenticationPrincipal UserDto currentUser, @PathVariable Long blockedId) {
     return socialConnectionService.block(currentUser, blockedId);
   }
 
   @PostMapping("/unblock/{blockedId}")
   public Mono<Void> unblock(
-      @AuthenticationPrincipal UserEntity currentUser, @PathVariable Long blockedId) {
+      @AuthenticationPrincipal UserDto currentUser, @PathVariable Long blockedId) {
     return socialConnectionService.unblock(currentUser, blockedId);
   }
 
   @GetMapping("/blocked")
   public Mono<Page<UserDto>> getBlockedUsers(
-      @AuthenticationPrincipal UserEntity currentUser,
+      @AuthenticationPrincipal UserDto currentUser,
       @RequestParam Long offset,
       @RequestParam Integer pageSize) {
     return socialConnectionService.getBlockedUsers(currentUser, offset, pageSize);

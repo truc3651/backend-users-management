@@ -4,15 +4,10 @@ import lombok.Data;
 
 @Data
 public class Neo4jConnectionSettings {
-  private String writerHost;
-  private String writerPort;
-  private String writerUsername;
-  private String writerPassword;
-
-  private String readerHost;
-  private String readerPort;
-  private String readerUsername;
-  private String readerPassword;
+  private String host;
+  private String port;
+  private String username;
+  private String password;
 
   private String database;
 }

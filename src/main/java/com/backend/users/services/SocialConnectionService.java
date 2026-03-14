@@ -1,15 +1,13 @@
 package com.backend.users.services;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import com.backend.core.dtos.UserDto;
 import com.backend.core.web.page.Page;
 import com.backend.users.dtos.BlockPayloadDto;
 import com.backend.users.dtos.FollowPayloadDto;
 import com.backend.users.dtos.UnblockPayloadDto;
 import com.backend.users.dtos.UnfollowPayloadDto;
-import com.backend.users.dtos.UserDto;
-import com.backend.users.entities.UserEntity;
 import com.backend.users.kafka.KafkaPublisher;
 import com.backend.users.mappers.FriendMapper;
 import com.backend.users.repositories.UserNodeRepository;
@@ -26,18 +24,17 @@ public class SocialConnectionService {
   private final FriendMapper friendMapper;
   private final KafkaPublisher kafkaPublisher;
 
-  public Mono<Void> follow(UserEntity currentUser, Long followedId) {
+  public Mono<Void> follow(UserDto currentUser, Long followedId) {
     FollowPayloadDto payload = new FollowPayloadDto(currentUser.getId(), followedId);
     return kafkaPublisher.sendFollowEvent(payload);
   }
 
-  public Mono<Void> unfollow(UserEntity currentUser, Long followedId) {
+  public Mono<Void> unfollow(UserDto currentUser, Long followedId) {
     UnfollowPayloadDto payload = new UnfollowPayloadDto(currentUser.getId(), followedId);
     return kafkaPublisher.sendUnfollowEvent(payload);
   }
 
-  @Transactional
-  public Mono<Page<UserDto>> getFollowing(UserEntity currentUser, Long offset, Integer pageSize) {
+  public Mono<Page<UserDto>> getFollowing(UserDto currentUser, Long offset, Integer pageSize) {
     Long userId = currentUser.getId();
 
     return userNodeRepository
@@ -48,7 +45,6 @@ public class SocialConnectionService {
         .map(tuple -> friendMapper.toUserDtoPage(tuple.getT1(), tuple.getT2()));
   }
 
-  @Transactional
   public Mono<Page<UserDto>> getFollowers(Long userId, Long offset, Integer pageSize) {
     return userNodeRepository
         .findFollowersPaginated(userId, offset, pageSize)
@@ -58,18 +54,17 @@ public class SocialConnectionService {
         .map(tuple -> friendMapper.toUserDtoPage(tuple.getT1(), tuple.getT2()));
   }
 
-  public Mono<Void> block(UserEntity currentUser, Long blockedId) {
+  public Mono<Void> block(UserDto currentUser, Long blockedId) {
     BlockPayloadDto payload = new BlockPayloadDto(currentUser.getId(), blockedId);
     return kafkaPublisher.sendBlockEvent(payload);
   }
 
-  public Mono<Void> unblock(UserEntity currentUser, Long blockedId) {
+  public Mono<Void> unblock(UserDto currentUser, Long blockedId) {
     UnblockPayloadDto payload = new UnblockPayloadDto(currentUser.getId(), blockedId);
     return kafkaPublisher.sendUnblockEvent(payload);
   }
 
-  public Mono<Page<UserDto>> getBlockedUsers(
-      UserEntity currentUser, Long offset, Integer pageSize) {
+  public Mono<Page<UserDto>> getBlockedUsers(UserDto currentUser, Long offset, Integer pageSize) {
     Long userId = currentUser.getId();
     return userNodeRepository
         .findBlockedUsersPaginated(userId, offset, pageSize)

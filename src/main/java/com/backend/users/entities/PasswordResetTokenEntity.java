@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.AllArgsConstructor;
@@ -14,10 +15,20 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PasswordResetTokenEntity {
+public class PasswordResetTokenEntity implements Persistable<String> {
   @Id private String token;
   private Long userId;
   private OffsetDateTime expiresAt;
 
   @CreatedDate private OffsetDateTime createdAt;
+
+  @Override
+  public String getId() {
+    return token;
+  }
+
+  @Override
+  public boolean isNew() {
+    return true;
+  }
 }

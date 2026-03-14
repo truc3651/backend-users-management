@@ -1,28 +1,29 @@
 package com.backend.users.neo4j;
 
-import static com.backend.users.neo4j.Neo4jDriverType.READER;
-import static com.backend.users.neo4j.Neo4jDriverType.WRITER;
-
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.neo4j.core.ReactiveDatabaseSelectionProvider;
+import org.springframework.data.neo4j.core.transaction.ReactiveNeo4jTransactionManager;
+import org.springframework.data.neo4j.repository.config.EnableReactiveNeo4jRepositories;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration
 @ConditionalOnClass({Driver.class})
+@EnableReactiveNeo4jRepositories(
+    basePackages = "com.backend.users.repositories",
+    transactionManagerRef = "neo4jTransactionManager")
+@EnableTransactionManagement
 public class Neo4jDriverConfig {
-  @Autowired protected Neo4jDriverFactory driverFactory;
-
   @Bean
   protected Config neo4jCommonConfig() {
     return Config.builder()
@@ -38,23 +39,15 @@ public class Neo4jDriverConfig {
         .build();
   }
 
-  @Bean(WRITER)
-  protected Driver writerNeo4jDriver() {
-    return driverFactory.getDriver(WRITER, neo4jCommonConfig());
-  }
-
-  @Bean(READER)
-  protected Driver readerNeo4jDriver() {
-    return driverFactory.getDriver(READER, neo4jCommonConfig());
-  }
-
   @Bean
   @Primary
-  protected Driver neo4jDriver() {
-    final Map<String, Driver> driverMap = new HashMap<>();
-    driverMap.put(WRITER, writerNeo4jDriver());
-    driverMap.put(READER, readerNeo4jDriver());
+  protected Driver neo4jDriver(Neo4jDriverFactory driverFactory) {
+    return driverFactory.getDriver(neo4jCommonConfig());
+  }
 
-    return new Neo4jReadWriteReplicaRoutingDriver(driverMap, writerNeo4jDriver());
+  @Bean("neo4jTransactionManager")
+  public ReactiveTransactionManager neo4jTransactionManager(
+      Driver routingNeo4jDriver, ReactiveDatabaseSelectionProvider databaseSelectionProvider) {
+    return new ReactiveNeo4jTransactionManager(routingNeo4jDriver, databaseSelectionProvider);
   }
 }

@@ -1,13 +1,11 @@
 CREATE SEQUENCE users.q_users_id INCREMENT BY 10 MINVALUE 1 NO MAXVALUE START WITH 1 CACHE 10 NO CYCLE;
 CREATE TABLE users.t_users (
-    id BIGINT DEFAULT nextval('users.q_users_id'),
+    id BIGINT PRIMARY KEY DEFAULT nextval('users.q_users_id'),
     email VARCHAR(255) UNIQUE,
     password VARCHAR(255),
     created_at TIMESTAMP with time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP with time zone
 );
-CREATE UNIQUE INDEX t_users_idx_id ON users.t_users USING HASH (id);
-CREATE UNIQUE INDEX t_users_idx_email ON users.t_users USING HASH (email);
 
 -----------
 
@@ -17,7 +15,7 @@ CREATE TABLE users.t_refresh_tokens (
     expires_at TIMESTAMP with time zone,
     created_at TIMESTAMP with time zone DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX t_refresh_tokens_idx_refresh_token ON users.t_refresh_tokens USING HASH(token);
+CREATE INDEX t_refresh_tokens_idx_refresh_token ON users.t_refresh_tokens USING HASH(token);
 
 -----------
 
@@ -42,4 +40,4 @@ CREATE TABLE users.t_password_reset_tokens (
    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX t_password_reset_tokens_idx_token ON users.t_password_reset_tokens USING HASH(token);
+CREATE INDEX t_password_reset_tokens_idx_token ON users.t_password_reset_tokens USING HASH(token);

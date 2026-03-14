@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +24,9 @@ import software.amazon.awssdk.services.secretsmanager.model.InvalidParameterExce
 import software.amazon.awssdk.services.secretsmanager.model.InvalidRequestException;
 import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundException;
 
-@Component("awsSecretsPostgresqlConnectionSettingsProvider")
+@Component
+@Profile("!localdev & !test")
+@ConditionalOnProperty(name = "AWS_REGION")
 public class PostgresqlConnectionSettingsProviderImplAWSSecret
     implements PostgresqlConnectionSettingsProvider {
   private static final String AWS_POSTGRESQL_SECRET_NAME_PARAM = "AWS_POSTGRESQL_SECRET_NAME_PARAM";

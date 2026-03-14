@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 
 @Repository
 public interface PasswordResetTokenRepository
-    extends R2dbcRepository<PasswordResetTokenEntity, Long> {
+    extends R2dbcRepository<PasswordResetTokenEntity, String> {
   Mono<PasswordResetTokenEntity> findByToken(String token);
 
   Mono<Void> deleteByToken(String token);

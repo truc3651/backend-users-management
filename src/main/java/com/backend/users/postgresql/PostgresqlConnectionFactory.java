@@ -6,7 +6,6 @@ import static com.backend.users.postgresql.PostgresqlDataSourceType.WRITER;
 import static java.lang.String.format;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.backend.core.exceptions.ConfigurationException;
@@ -16,18 +15,15 @@ import com.backend.users.postgresql.settings.PostgresqlConnectionSettingsProvide
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
+import io.r2dbc.spi.Option;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
+@AllArgsConstructor
 @Slf4j
 public class PostgresqlConnectionFactory {
   private final PostgresqlConnectionSettingsProvider connectionProvider;
-
-  public PostgresqlConnectionFactory(
-      @Qualifier("delegatingPostgresqlConnectionSettingsProvider")
-          PostgresqlConnectionSettingsProvider connectionProvider) {
-    this.connectionProvider = connectionProvider;
-  }
 
   public ConnectionFactory getConnectionFactory(String dataSourceType) {
     PostgresqlConnectionSettings settings = connectionProvider.provide();
@@ -58,6 +54,7 @@ public class PostgresqlConnectionFactory {
             .option(ConnectionFactoryOptions.DATABASE, propertiesHolder.getDatabase())
             .option(ConnectionFactoryOptions.USER, propertiesHolder.getUsername())
             .option(ConnectionFactoryOptions.PASSWORD, propertiesHolder.getPassword())
+            .option(Option.valueOf("schema"), propertiesHolder.getSchema())
             .build();
 
     return ConnectionFactories.get(options);

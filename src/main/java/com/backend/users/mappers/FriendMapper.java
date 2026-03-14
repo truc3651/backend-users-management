@@ -4,9 +4,9 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 
+import com.backend.core.dtos.UserDto;
 import com.backend.core.web.page.Page;
 import com.backend.users.dtos.FriendRequestResponseDto;
-import com.backend.users.dtos.UserDto;
 import com.backend.users.entities.FriendRequestEntity;
 import com.backend.users.graph.UserNode;
 

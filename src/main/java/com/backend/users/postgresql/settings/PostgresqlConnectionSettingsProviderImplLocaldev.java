@@ -1,11 +1,13 @@
 package com.backend.users.postgresql.settings;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 
-@Component("localdevPostgresqlConnectionSettingsProvider")
+@Component
+@Profile({"localdev", "test"})
 @ConditionalOnBean(LocaldevPostgresqlSettings.class)
 @RequiredArgsConstructor
 public class PostgresqlConnectionSettingsProviderImplLocaldev
