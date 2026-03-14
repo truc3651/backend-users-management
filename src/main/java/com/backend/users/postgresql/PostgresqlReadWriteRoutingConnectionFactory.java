@@ -25,6 +25,7 @@ public class PostgresqlReadWriteRoutingConnectionFactory extends AbstractRouting
         .map(
             synchronizationManager ->
                 (Object) (synchronizationManager.isCurrentTransactionReadOnly() ? READER : WRITER))
-        .defaultIfEmpty(WRITER);
+        .defaultIfEmpty(WRITER)
+        .onErrorResume(e -> Mono.just(WRITER));
   }
 }

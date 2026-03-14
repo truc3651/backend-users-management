@@ -1,18 +1,17 @@
 package com.backend.users.postgresql;
 
-import static com.backend.users.utils.Constants.DATABASE;
-import static com.backend.users.utils.Constants.POSTGRESQL;
-
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
-@Component
+@Component("dbHealthIndicator")
 @RequiredArgsConstructor
+@Slf4j
 public class PostgresHealthIndicator implements ReactiveHealthIndicator {
   private final DatabaseClient databaseClient;
 
@@ -22,10 +21,7 @@ public class PostgresHealthIndicator implements ReactiveHealthIndicator {
         .sql("SELECT 1")
         .fetch()
         .first()
-        .map(result -> Health.up().withDetail(DATABASE, POSTGRESQL).build())
-        .onErrorResume(
-            ex ->
-                Mono.just(
-                    Health.down().withDetail(DATABASE, POSTGRESQL).withException(ex).build()));
+        .map(result -> Health.up().build())
+        .onErrorResume(ex -> Mono.just(Health.down().withException(ex).build()));
   }
 }

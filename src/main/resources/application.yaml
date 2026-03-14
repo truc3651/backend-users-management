@@ -38,6 +38,17 @@ web:
   security:
     open-paths:
       - pattern: /v1/api/auth/**
+      - pattern: /health/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      base-path: /
+  endpoint:
+    health:
+      show-details: always
 
 app:
   domain:
