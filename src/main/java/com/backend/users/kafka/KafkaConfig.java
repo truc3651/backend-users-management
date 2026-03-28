@@ -25,7 +25,6 @@ public class KafkaConfig {
 
   @Bean
   public KafkaSender<String, BaseEvent> kafkaSender() {
-    System.out.println(">>default " + kafkaProperties.buildProducerProperties());
     Map<String, Object> props = new HashMap<>(kafkaProperties.buildProducerProperties());
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersProvider.provide());
 

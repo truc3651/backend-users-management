@@ -4,8 +4,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.backend.core.dtos.UserDto;
-import com.backend.users.dtos.FriendRequestResponseDto;
+import com.backend.users.dtos.PendingFriendRequestDto;
+import com.backend.users.dtos.ProfileResponseDto;
 import com.backend.users.dtos.SendFriendRequestDto;
+import com.backend.users.dtos.SentFriendRequestDto;
 import com.backend.users.services.FriendshipService;
 
 import jakarta.validation.Valid;
@@ -28,41 +30,42 @@ public class FriendshipController {
 
   @PostMapping("/requests/{requestId}/accept")
   public Mono<Void> acceptFriendRequest(
-      @AuthenticationPrincipal UserDto currentUser, @PathVariable Long requestId) {
+      @AuthenticationPrincipal UserDto currentUser, @PathVariable String requestId) {
     return friendshipService.acceptFriendRequest(currentUser, requestId);
   }
 
   @PostMapping("/requests/{requestId}/reject")
   public Mono<Void> rejectFriendRequest(
-      @AuthenticationPrincipal UserDto currentUser, @PathVariable Long requestId) {
+      @AuthenticationPrincipal UserDto currentUser, @PathVariable String requestId) {
     return friendshipService.rejectFriendRequest(currentUser, requestId);
   }
 
   @PostMapping("/requests/{requestId}/cancel")
   public Mono<Void> cancelFriendRequest(
-      @AuthenticationPrincipal UserDto currentUser, @PathVariable Long requestId) {
+      @AuthenticationPrincipal UserDto currentUser, @PathVariable String requestId) {
     return friendshipService.cancelFriendRequest(currentUser, requestId);
   }
 
   @GetMapping("/requests/pending")
-  public Flux<FriendRequestResponseDto> getPendingFriendRequests(
+  public Flux<PendingFriendRequestDto> getPendingFriendRequests(
       @AuthenticationPrincipal UserDto currentUser) {
     return friendshipService.getPendingFriendRequests(currentUser.getId());
   }
 
   @GetMapping("/requests/sent")
-  public Flux<FriendRequestResponseDto> getSentFriendRequests(
+  public Flux<SentFriendRequestDto> getSentFriendRequests(
       @AuthenticationPrincipal UserDto currentUser) {
     return friendshipService.getSentFriendRequests(currentUser.getId());
   }
 
   @GetMapping("/friends")
-  public Flux<UserDto> getFriends(@AuthenticationPrincipal UserDto currentUser) {
+  public Flux<ProfileResponseDto> getFriends(@AuthenticationPrincipal UserDto currentUser) {
     return friendshipService.getFriends(currentUser.getId());
   }
 
   @GetMapping("/suggestions")
-  public Flux<UserDto> getFriendSuggestions(@AuthenticationPrincipal UserDto currentUser) {
+  public Flux<ProfileResponseDto> getFriendSuggestions(
+      @AuthenticationPrincipal UserDto currentUser) {
     return friendshipService.getFriendSuggestions(currentUser.getId());
   }
 }

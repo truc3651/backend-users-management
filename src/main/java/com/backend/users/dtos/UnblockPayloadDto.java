@@ -13,9 +13,9 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode(callSuper = true)
 public class UnblockPayloadDto extends UserPayloadDto {
-  private Long blockedId;
+  private String blockedId;
 
-  public UnblockPayloadDto(Long userId, Long blockedId) {
+  public UnblockPayloadDto(String userId, String blockedId) {
     super(userId);
     this.blockedId = blockedId;
   }

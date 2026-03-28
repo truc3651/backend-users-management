@@ -12,7 +12,7 @@ import lombok.Data;
 @RelationshipProperties
 @Data
 public class BlocksRelationship {
-  @Id @GeneratedValue private Long id;
+  @Id @GeneratedValue private String id;
   @TargetNode private UserNode blockedUser;
   private OffsetDateTime createdAt;
 }

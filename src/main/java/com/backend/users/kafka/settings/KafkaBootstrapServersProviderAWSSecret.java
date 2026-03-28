@@ -43,7 +43,9 @@ public class KafkaBootstrapServersProviderAWSSecret implements KafkaBootstrapSer
   @Override
   public String provide() {
     try {
-      return objectMapper.readValue(getSecretJson(), String.class);
+      AWSKafkaSettings kafkaSecret =
+          objectMapper.readValue(getSecretJson(), AWSKafkaSettings.class);
+      return kafkaSecret.getFirstTlsBroker();
     } catch (IOException e) {
       throw new AWSException(e);
     }

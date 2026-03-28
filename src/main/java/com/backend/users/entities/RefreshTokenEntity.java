@@ -2,7 +2,6 @@ package com.backend.users.entities;
 
 import java.time.OffsetDateTime;
 
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Table;
@@ -17,10 +16,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RefreshTokenEntity implements Persistable<String> {
   @Id private String token;
-  private Long userId;
+  private String userId;
   private OffsetDateTime expiresAt;
-
-  @CreatedDate private OffsetDateTime createdAt;
 
   @Override
   public String getId() {

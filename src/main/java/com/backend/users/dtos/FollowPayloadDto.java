@@ -13,9 +13,9 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode(callSuper = true)
 public class FollowPayloadDto extends UserPayloadDto {
-  private Long followedId;
+  private String followedId;
 
-  public FollowPayloadDto(Long userId, Long followedId) {
+  public FollowPayloadDto(String userId, String followedId) {
     super(userId);
     this.followedId = followedId;
   }

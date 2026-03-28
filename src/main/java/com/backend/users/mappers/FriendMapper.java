@@ -4,19 +4,24 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 
-import com.backend.core.dtos.UserDto;
 import com.backend.core.web.page.Page;
-import com.backend.users.dtos.FriendRequestResponseDto;
-import com.backend.users.entities.FriendRequestEntity;
+import com.backend.users.dtos.PendingFriendRequestDto;
+import com.backend.users.dtos.ProfileResponseDto;
+import com.backend.users.dtos.SentFriendRequestDto;
+import com.backend.users.entities.PendingFriendRequestProjection;
+import com.backend.users.entities.SentFriendRequestProjection;
 import com.backend.users.graph.UserNode;
 
 @Mapper(componentModel = "spring")
 public interface FriendMapper {
-  FriendRequestResponseDto toFriendRequestResponseDto(FriendRequestEntity entity);
+  PendingFriendRequestDto toPendingFriendRequestDto(PendingFriendRequestProjection projection);
 
-  UserDto toUserDto(UserNode userNode);
+  SentFriendRequestDto toSentFriendRequestDto(SentFriendRequestProjection projection);
 
-  default Page<UserDto> toUserDtoPage(List<UserDto> items, Long totalElements) {
-    return Page.<UserDto>builder().items(items).totalElements(totalElements).build();
+  ProfileResponseDto toProfileResponseDto(UserNode userNode);
+
+  default Page<ProfileResponseDto> toUserDtoPage(
+      List<ProfileResponseDto> items, Long totalElements) {
+    return Page.<ProfileResponseDto>builder().items(items).totalElements(totalElements).build();
   }
 }

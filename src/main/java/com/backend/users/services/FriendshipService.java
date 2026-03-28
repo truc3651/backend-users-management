@@ -14,8 +14,11 @@ import com.backend.core.dtos.UserDto;
 import com.backend.core.exceptions.ForbiddenException;
 import com.backend.core.exceptions.ResourceNotFoundException;
 import com.backend.core.exceptions.ValidationException;
-import com.backend.users.dtos.FriendRequestResponseDto;
+import com.backend.core.tsid.TsidGenerator;
+import com.backend.users.dtos.PendingFriendRequestDto;
+import com.backend.users.dtos.ProfileResponseDto;
 import com.backend.users.dtos.SendFriendRequestDto;
+import com.backend.users.dtos.SentFriendRequestDto;
 import com.backend.users.entities.FriendRequestEntity;
 import com.backend.users.enums.FriendRequestStatus;
 import com.backend.users.mappers.FriendMapper;
@@ -36,15 +39,15 @@ public class FriendshipService {
   private final UserRepository userRepository;
   private final UserNodeRepository userNodeRepository;
   private final FriendMapper friendMapper;
+  private final TsidGenerator tsidGenerator;
 
-  private final ReactiveCacheTemplate<List<UserDto>> friendsCache;
-  private final ReactiveCacheTemplate<List<UserDto>> suggestionsCache;
+  private final ReactiveCacheTemplate<List<ProfileResponseDto>> friendsCache;
+  private final ReactiveCacheTemplate<List<ProfileResponseDto>> suggestionsCache;
 
   @Transactional
-  public Mono<Void> sendFriendRequest(
-      com.backend.core.dtos.UserDto currentUser, SendFriendRequestDto request) {
-    Long requesterId = currentUser.getId();
-    Long addresseeId = request.getAddresseeId();
+  public Mono<Void> sendFriendRequest(UserDto currentUser, SendFriendRequestDto request) {
+    String requesterId = currentUser.getId();
+    String addresseeId = request.getAddresseeId();
 
     return userRepository
         .findById(addresseeId)
@@ -56,6 +59,7 @@ public class FriendshipService {
                         Mono.defer(
                             () -> {
                               FriendRequestEntity friendRequest = new FriendRequestEntity();
+                              friendRequest.setId(tsidGenerator.generate());
                               friendRequest.setRequesterId(requesterId);
                               friendRequest.setAddresseeId(addresseeId);
                               friendRequest.setStatus(FriendRequestStatus.PENDING);
@@ -65,8 +69,8 @@ public class FriendshipService {
   }
 
   @Transactional
-  public Mono<Void> acceptFriendRequest(UserDto currentUser, Long requestId) {
-    Long currentUserId = currentUser.getId();
+  public Mono<Void> acceptFriendRequest(UserDto currentUser, String requestId) {
+    String currentUserId = currentUser.getId();
 
     return findFriendRequestById(requestId)
         .flatMap(
@@ -83,13 +87,11 @@ public class FriendshipService {
   }
 
   @Transactional
-  public Mono<Void> rejectFriendRequest(UserDto currentUser, Long requestId) {
-    Long currentUserId = currentUser.getId();
-
+  public Mono<Void> rejectFriendRequest(UserDto currentUser, String requestId) {
     return findFriendRequestById(requestId)
         .flatMap(
             fr -> {
-              validateDefaultOperations(fr, currentUserId);
+              validateDefaultOperations(fr, currentUser.getId());
               fr.setStatus(FriendRequestStatus.REJECTED);
               return friendRequestRepository.save(fr);
             })
@@ -97,48 +99,46 @@ public class FriendshipService {
   }
 
   @Transactional
-  public Mono<Void> cancelFriendRequest(UserDto currentUser, Long requestId) {
-    Long currentUserId = currentUser.getId();
-
+  public Mono<Void> cancelFriendRequest(UserDto currentUser, String requestId) {
     return findFriendRequestById(requestId)
         .flatMap(
             fr -> {
-              validateCanceling(fr, currentUserId);
+              validateCanceling(fr, currentUser.getId());
               fr.setStatus(FriendRequestStatus.CANCELLED);
               return friendRequestRepository.save(fr);
             })
         .then();
   }
 
-  public Flux<FriendRequestResponseDto> getPendingFriendRequests(Long userId) {
+  public Flux<PendingFriendRequestDto> getPendingFriendRequests(String userId) {
     return friendRequestRepository
-        .findByAddresseeIdAndStatus(userId, FriendRequestStatus.PENDING)
-        .map(friendMapper::toFriendRequestResponseDto);
+        .findPendingFriendRequests(userId, FriendRequestStatus.PENDING)
+        .map(friendMapper::toPendingFriendRequestDto);
   }
 
-  public Flux<FriendRequestResponseDto> getSentFriendRequests(Long userId) {
+  public Flux<SentFriendRequestDto> getSentFriendRequests(String userId) {
     return friendRequestRepository
-        .findByRequesterIdAndStatus(userId, FriendRequestStatus.PENDING)
-        .map(friendMapper::toFriendRequestResponseDto);
+        .findSentFriendRequests(userId, FriendRequestStatus.PENDING)
+        .map(friendMapper::toSentFriendRequestDto);
   }
 
-  public Flux<UserDto> getFriends(Long userId) {
+  public Flux<ProfileResponseDto> getFriends(String userId) {
     return friendsCache.get(userId, this::loadFriendsFromNeo4j).flatMapMany(Flux::fromIterable);
   }
 
-  public Flux<UserDto> getFriendSuggestions(Long userId) {
+  public Flux<ProfileResponseDto> getFriendSuggestions(String userId) {
     return suggestionsCache
         .get(userId, this::loadSuggestionsFromNeo4j)
         .flatMapMany(Flux::fromIterable);
   }
 
-  private Mono<FriendRequestEntity> findFriendRequestById(Long id) {
+  private Mono<FriendRequestEntity> findFriendRequestById(String id) {
     return friendRequestRepository
         .findById(id)
         .switchIfEmpty(Mono.error(new ResourceNotFoundException(id, FRIEND_REQUEST_RESOURCE_NAME)));
   }
 
-  private Mono<Void> validateSending(Long requesterId, Long addresseeId) {
+  private Mono<Void> validateSending(String requesterId, String addresseeId) {
     if (requesterId.equals(addresseeId)) {
       return Mono.error(new ValidationException("Cannot send friend request to yourself"));
     }
@@ -159,14 +159,14 @@ public class FriendshipService {
             });
   }
 
-  private void validateDefaultOperations(FriendRequestEntity fr, Long addresseeId) {
+  private void validateDefaultOperations(FriendRequestEntity fr, String addresseeId) {
     if (!fr.getAddresseeId().equals(addresseeId)) {
       throw new ForbiddenException("You are not authorized to operate this request");
     }
     validateFriendRequestPending(fr);
   }
 
-  private void validateCanceling(FriendRequestEntity fr, Long requesterId) {
+  private void validateCanceling(FriendRequestEntity fr, String requesterId) {
     if (!fr.getRequesterId().equals(requesterId)) {
       throw new ForbiddenException("You are not authorized to cancel this request");
     }
@@ -179,22 +179,25 @@ public class FriendshipService {
     }
   }
 
-  private Mono<List<UserDto>> loadFriendsFromNeo4j(Long id) {
-    return userNodeRepository.findFriendsByUserId(id).map(friendMapper::toUserDto).collectList();
-  }
-
-  private Mono<List<UserDto>> loadSuggestionsFromNeo4j(Long id) {
+  private Mono<List<ProfileResponseDto>> loadFriendsFromNeo4j(String id) {
     return userNodeRepository
-        .findFriendsOfFriends(id, DEFAULT_PAGINATION)
-        .map(friendMapper::toUserDto)
+        .findFriendsByUserId(id)
+        .map(friendMapper::toProfileResponseDto)
         .collectList();
   }
 
-  private Mono<Void> evictFriendsCaches(Long userId1, Long userId2) {
+  private Mono<List<ProfileResponseDto>> loadSuggestionsFromNeo4j(String id) {
+    return userNodeRepository
+        .findFriendsOfFriends(id, DEFAULT_PAGINATION)
+        .map(friendMapper::toProfileResponseDto)
+        .collectList();
+  }
+
+  private Mono<Void> evictFriendsCaches(String userId1, String userId2) {
     return Mono.when(friendsCache.evict(userId1), friendsCache.evict(userId2));
   }
 
-  private Mono<Void> evictSuggestionsCaches(Long userId1, Long userId2) {
+  private Mono<Void> evictSuggestionsCaches(String userId1, String userId2) {
     return Mono.when(suggestionsCache.evict(userId1), suggestionsCache.evict(userId2));
   }
 }

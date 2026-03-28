@@ -34,11 +34,11 @@ kafka-properties:
   unblock-topic-name: unblocks
   dead-letter-topic-name: deadLetters
 
-web:
-  security:
-    open-paths:
-      - pattern: /v1/api/auth/**
-      - pattern: /health/**
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
 
 management:
   endpoints:

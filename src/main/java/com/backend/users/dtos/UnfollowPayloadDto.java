@@ -13,9 +13,9 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode(callSuper = true)
 public class UnfollowPayloadDto extends UserPayloadDto {
-  private Long followedId;
+  private String followedId;
 
-  public UnfollowPayloadDto(Long userId, Long followedId) {
+  public UnfollowPayloadDto(String userId, String followedId) {
     super(userId);
     this.followedId = followedId;
   }

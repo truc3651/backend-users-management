@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 
 import com.backend.core.cache.ReactiveCacheTemplate;
-import com.backend.core.dtos.UserDto;
+import com.backend.users.dtos.ProfileResponseDto;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @EnableConfigurationProperties(CacheProperties.class)
 public class CacheConfig {
   @Bean
-  public ReactiveCacheTemplate<UserDto> coreUserCache(
+  public ReactiveCacheTemplate<ProfileResponseDto> userProfileCache(
       @Qualifier("reactiveStringRedisTemplate") ReactiveRedisTemplate<String, String> redis,
       ObjectMapper mapper,
       CacheProperties props) {
@@ -27,7 +27,7 @@ public class CacheConfig {
   }
 
   @Bean
-  public ReactiveCacheTemplate<List<UserDto>> friendsCache(
+  public ReactiveCacheTemplate<List<ProfileResponseDto>> friendsCache(
       @Qualifier("reactiveStringRedisTemplate") ReactiveRedisTemplate<String, String> redis,
       ObjectMapper mapper,
       CacheProperties props) {
@@ -37,7 +37,7 @@ public class CacheConfig {
   }
 
   @Bean
-  public ReactiveCacheTemplate<List<UserDto>> suggestionsCache(
+  public ReactiveCacheTemplate<List<ProfileResponseDto>> suggestionsCache(
       @Qualifier("reactiveStringRedisTemplate") ReactiveRedisTemplate<String, String> redis,
       ObjectMapper mapper,
       CacheProperties props) {

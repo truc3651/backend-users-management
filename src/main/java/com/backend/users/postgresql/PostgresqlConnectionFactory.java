@@ -1,6 +1,5 @@
 package com.backend.users.postgresql;
 
-import static com.backend.users.postgresql.PostgresqlDataSourceType.MIGRATION;
 import static com.backend.users.postgresql.PostgresqlDataSourceType.READER;
 import static com.backend.users.postgresql.PostgresqlDataSourceType.WRITER;
 import static java.lang.String.format;
@@ -81,12 +80,6 @@ public class PostgresqlConnectionFactory {
           .port(settings.getWriterPort())
           .username(settings.getWriterUsername())
           .password(settings.getWriterPassword())
-          .build();
-      case MIGRATION -> builder
-          .host(settings.getWriterHost())
-          .port(settings.getWriterPort())
-          .username(settings.getMigrationUsername())
-          .password(settings.getMigrationPassword())
           .build();
       default -> throw new ConfigurationException(
           format("Unsupported ConnectionFactory type supplied [%s]", dataSourceType));

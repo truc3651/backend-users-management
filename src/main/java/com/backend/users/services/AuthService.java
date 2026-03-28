@@ -2,6 +2,7 @@ package com.backend.users.services;
 
 import java.util.Map;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -9,20 +10,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.backend.core.cache.ReactiveCacheTemplate;
 import com.backend.core.dtos.UserDto;
 import com.backend.core.dtos.ValidateTokenRequestDto;
 import com.backend.core.dtos.ValidateTokenResponseDto;
 import com.backend.core.exceptions.ValidationException;
+import com.backend.core.tsid.TsidGenerator;
 import com.backend.users.dtos.ForgotPasswordRequestDto;
 import com.backend.users.dtos.LoginRequestDto;
 import com.backend.users.dtos.LoginResponseDto;
 import com.backend.users.dtos.LogoutRequestDto;
+import com.backend.users.dtos.ProfileResponseDto;
 import com.backend.users.dtos.RefreshTokenRequestDto;
 import com.backend.users.dtos.RefreshTokenResponseDto;
 import com.backend.users.dtos.RegisterRequestDto;
 import com.backend.users.dtos.ResetPasswordRequestDto;
 import com.backend.users.entities.UserEntity;
 import com.backend.users.enums.JwtPayloadFields;
+import com.backend.users.mappers.UserMapper;
 import com.backend.users.repositories.UserRepository;
 import com.backend.users.ses.MailService;
 import com.backend.users.utils.JwtUtil;
@@ -39,9 +44,12 @@ public class AuthService {
   private final PasswordResetService passwordResetService;
   private final MailService mailService;
   private final UserRepository userRepository;
+  private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
   private final JwtUtil jwtUtil;
   private final ReactiveAuthenticationManager authenticationManager;
+  private final ReactiveCacheTemplate<ProfileResponseDto> userProfileCache;
+  private final TsidGenerator tsidGenerator;
 
   @Transactional
   public Mono<Void> register(RegisterRequestDto request) {
@@ -54,11 +62,16 @@ public class AuthService {
               }
 
               UserEntity user = new UserEntity();
-              user.setEmail(request.getEmail());
+              BeanUtils.copyProperties(request, user);
+              user.setId(tsidGenerator.generate());
               user.setPassword(passwordEncoder.encode(request.getPassword()));
               return userRepository
                   .save(user)
-                  .doOnSuccess(u -> mailService.sendWelcomeMail(u.getEmail()).subscribe())
+                  .doOnSuccess(
+                      u -> {
+                        cacheUserProfile(u);
+                        mailService.sendWelcomeMail(u.getEmail()).subscribe();
+                      })
                   .then();
             });
   }
@@ -127,7 +140,7 @@ public class AuthService {
           Map<String, Object> extractPayload = jwtUtil.extractPayload(token);
           UserDto user =
               new UserDto(
-                  Long.valueOf(extractPayload.get(JwtPayloadFields.ID.getName()).toString()),
+                  extractPayload.get(JwtPayloadFields.ID.getName()).toString(),
                   extractPayload.get(JwtPayloadFields.EMAIL.getName()).toString());
           return ValidateTokenResponseDto.builder()
               .valid(true)
@@ -153,5 +166,9 @@ public class AuthService {
   public Mono<Void> logout(LogoutRequestDto request) {
     // accessToken is short live, let it expires itself without any intervention
     return refreshTokenService.deleteRefreshToken(request.getRefreshToken());
+  }
+
+  private void cacheUserProfile(UserEntity user) {
+    userProfileCache.put(user.getId(), userMapper.toProfileResponseDto(user)).subscribe();
   }
 }

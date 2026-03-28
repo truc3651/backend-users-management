@@ -19,8 +19,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class UserNode {
-  @Id private Long id;
-  private String email;
+  @Id private String id;
+  private String fullName;
+  private String profilePictureUrl;
 
   @Relationship(type = "FRIENDS_WITH", direction = OUTGOING)
   private Set<UserNode> friends = new HashSet<>();

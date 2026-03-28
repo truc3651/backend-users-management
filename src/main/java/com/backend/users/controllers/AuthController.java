@@ -1,7 +1,9 @@
 package com.backend.users.controllers;
 
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import com.backend.core.annotations.Anonymous;
 import com.backend.core.dtos.ValidateTokenRequestDto;
 import com.backend.core.dtos.ValidateTokenResponseDto;
 import com.backend.users.dtos.ForgotPasswordRequestDto;
@@ -18,9 +20,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+@Anonymous
 @RestController
 @RequestMapping("/v1/api/auth")
 @RequiredArgsConstructor
+@Validated
 public class AuthController {
   private final AuthService authService;
 

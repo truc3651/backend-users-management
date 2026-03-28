@@ -1,4 +1,4 @@
-package com.backend.users.dtos;
+package com.backend.users.entities;
 
 import java.time.OffsetDateTime;
 
@@ -6,15 +6,14 @@ import com.backend.users.enums.FriendRequestStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class FriendRequestResponseDto {
-  private Long id;
-  private Long requesterId;
-  private Long addresseeId;
+public class SentFriendRequestProjection {
+  private String id;
+  private String addresseeId;
+  private String addresseeFullName;
+  private String addresseeProfilePictureUrl;
   private FriendRequestStatus status;
   private OffsetDateTime createdAt;
 }

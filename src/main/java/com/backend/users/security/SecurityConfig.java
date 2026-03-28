@@ -2,9 +2,9 @@ package com.backend.users.security;
 
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
@@ -15,35 +15,58 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.util.CollectionUtils;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.util.pattern.PathPattern;
 
+import com.backend.core.annotations.Anonymous;
 import com.backend.core.security.CustomAccessDeniedHandler;
 import com.backend.core.security.CustomAuthenticationEntryPoint;
 import com.backend.core.security.JwtTokenAuthenticationFilter;
-import com.backend.core.security.SecuritySettings;
-
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
-  private final SecuritySettings securitySettings;
   private final JwtTokenAuthenticationFilter jwtTokenAuthenticationFilter;
   private final ReactiveUserDetailsService userDetailsService;
   private final CustomAuthenticationEntryPoint authenticationEntryPoint;
   private final CustomAccessDeniedHandler accessDeniedHandler;
+  private final RequestMappingHandlerMapping handlerMapping;
+
+  public SecurityConfig(
+      JwtTokenAuthenticationFilter jwtTokenAuthenticationFilter,
+      ReactiveUserDetailsService userDetailsService,
+      CustomAuthenticationEntryPoint authenticationEntryPoint,
+      CustomAccessDeniedHandler accessDeniedHandler,
+      @Qualifier("requestMappingHandlerMapping") RequestMappingHandlerMapping handlerMapping) {
+    this.jwtTokenAuthenticationFilter = jwtTokenAuthenticationFilter;
+    this.userDetailsService = userDetailsService;
+    this.authenticationEntryPoint = authenticationEntryPoint;
+    this.accessDeniedHandler = accessDeniedHandler;
+    this.handlerMapping = handlerMapping;
+  }
 
   @Bean
   public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
+    String[] anonymousPaths = resolveAnonymousPaths();
+
     http.csrf(ServerHttpSecurity.CsrfSpec::disable)
         .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-        .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable);
+        .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+        .authorizeExchange(
+            exchange -> {
+              exchange
+                  .pathMatchers(
+                      "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**")
+                  .permitAll();
 
-    configureOpenPaths(http);
+              if (anonymousPaths.length > 0) {
+                exchange.pathMatchers(anonymousPaths).permitAll();
+              }
 
-    http.authorizeExchange(exchange -> exchange.anyExchange().authenticated())
+              exchange.anyExchange().authenticated();
+            })
         .exceptionHandling(
             exception ->
                 exception
@@ -67,28 +90,20 @@ public class SecurityConfig {
     return new BCryptPasswordEncoder();
   }
 
-  private void configureOpenPaths(ServerHttpSecurity http) {
-    Set<SecuritySettings.OpenPath> openPaths = securitySettings.getOpenPaths();
-    if (CollectionUtils.isEmpty(openPaths)) {
-      return;
-    }
+  private String[] resolveAnonymousPaths() {
+    return handlerMapping.getHandlerMethods().entrySet().stream()
+        .filter(entry -> hasAnonymousAnnotation(entry.getValue()))
+        .flatMap(
+            entry -> {
+              Set<PathPattern> patterns = entry.getKey().getPatternsCondition().getPatterns();
+              return patterns.stream().map(PathPattern::getPatternString);
+            })
+        .distinct()
+        .toArray(String[]::new);
+  }
 
-    http.authorizeExchange(
-        exchange ->
-            openPaths.forEach(
-                openPath -> {
-                  String pattern = openPath.getPattern();
-                  if (CollectionUtils.isEmpty(openPath.getMethods())) {
-                    exchange.pathMatchers(pattern).permitAll();
-                  } else {
-                    openPath
-                        .getMethods()
-                        .forEach(
-                            method ->
-                                exchange
-                                    .pathMatchers(HttpMethod.valueOf(method.name()), pattern)
-                                    .permitAll());
-                  }
-                }));
+  private boolean hasAnonymousAnnotation(HandlerMethod method) {
+    return method.hasMethodAnnotation(Anonymous.class)
+        || method.getBeanType().isAnnotationPresent(Anonymous.class);
   }
 }

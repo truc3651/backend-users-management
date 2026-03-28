@@ -14,5 +14,5 @@ import lombok.NoArgsConstructor;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserPayloadDto {
-  private Long userId;
+  private String userId;
 }

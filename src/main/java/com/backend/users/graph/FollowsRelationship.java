@@ -12,7 +12,7 @@ import lombok.Data;
 @RelationshipProperties
 @Data
 public class FollowsRelationship {
-  @Id @GeneratedValue private Long id;
+  @Id @GeneratedValue private String id;
   @TargetNode private UserNode followedUser;
   private OffsetDateTime createdAt;
 }

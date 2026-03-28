@@ -11,9 +11,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Repository
-public interface UserNodeRepository extends ReactiveNeo4jRepository<UserNode, Long> {
+public interface UserNodeRepository extends ReactiveNeo4jRepository<UserNode, String> {
   @Query("MATCH (u:User {id: $userId})-[:FRIENDS_WITH]->(fr:User) RETURN fr")
-  Flux<UserNode> findFriendsByUserId(@Param("userId") Long userId);
+  Flux<UserNode> findFriendsByUserId(@Param("userId") String userId);
 
   @Query(
       """
@@ -22,7 +22,7 @@ public interface UserNodeRepository extends ReactiveNeo4jRepository<UserNode, Lo
         RETURN DISTINCT fof
         LIMIT $limit
       """)
-  Flux<UserNode> findFriendsOfFriends(@Param("userId") Long userId, @Param("limit") int limit);
+  Flux<UserNode> findFriendsOfFriends(@Param("userId") String userId, @Param("limit") int limit);
 
   @Query(
       """
@@ -32,10 +32,12 @@ public interface UserNodeRepository extends ReactiveNeo4jRepository<UserNode, Lo
         LIMIT $pageSize
       """)
   Flux<UserNode> findFollowingPaginated(
-      @Param("userId") Long userId, @Param("offset") long offset, @Param("pageSize") int pageSize);
+      @Param("userId") String userId,
+      @Param("offset") long offset,
+      @Param("pageSize") int pageSize);
 
   @Query("MATCH (u:User {id: $userId})-[:FOLLOWS]->(followed:User) RETURN count(followed)")
-  Mono<Long> countFollowing(@Param("userId") Long userId);
+  Mono<Long> countFollowing(@Param("userId") String userId);
 
   @Query(
       """
@@ -45,10 +47,12 @@ public interface UserNodeRepository extends ReactiveNeo4jRepository<UserNode, Lo
         LIMIT $pageSize
       """)
   Flux<UserNode> findFollowersPaginated(
-      @Param("userId") Long userId, @Param("offset") long offset, @Param("pageSize") int pageSize);
+      @Param("userId") String userId,
+      @Param("offset") long offset,
+      @Param("pageSize") int pageSize);
 
   @Query("MATCH (follower:User)-[:FOLLOWS]->(u:User {id: $userId}) RETURN count(follower)")
-  Mono<Long> countFollowers(@Param("userId") Long userId);
+  Mono<Long> countFollowers(@Param("userId") String userId);
 
   @Query(
       """
@@ -58,8 +62,10 @@ public interface UserNodeRepository extends ReactiveNeo4jRepository<UserNode, Lo
         LIMIT $pageSize
       """)
   Flux<UserNode> findBlockedUsersPaginated(
-      @Param("userId") Long userId, @Param("offset") long offset, @Param("pageSize") int pageSize);
+      @Param("userId") String userId,
+      @Param("offset") long offset,
+      @Param("pageSize") int pageSize);
 
   @Query("MATCH (u:User {id: $userId})-[:BLOCKS]->(blocked:User) RETURN count(blocked)")
-  Mono<Long> countBlockedUsers(@Param("userId") Long userId);
+  Mono<Long> countBlockedUsers(@Param("userId") String userId);
 }

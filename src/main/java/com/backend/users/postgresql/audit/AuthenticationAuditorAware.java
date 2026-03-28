@@ -9,11 +9,9 @@ import com.backend.core.security.JwtTokenAuthenticationHolder;
 import reactor.core.publisher.Mono;
 
 @Component
-public class AuthenticationAuditorAware implements ReactiveAuditorAware<Long> {
+public class AuthenticationAuditorAware implements ReactiveAuditorAware<String> {
   @Override
-  public Mono<Long> getCurrentAuditor() {
-    return JwtTokenAuthenticationHolder.findAuthenticatedUser()
-        .map(UserDto::getId)
-        .defaultIfEmpty(0L);
+  public Mono<String> getCurrentAuditor() {
+    return JwtTokenAuthenticationHolder.findAuthenticatedUser().map(UserDto::getId);
   }
 }
