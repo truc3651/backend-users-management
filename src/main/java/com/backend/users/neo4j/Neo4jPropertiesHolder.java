@@ -8,6 +8,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 
+import io.jsonwebtoken.lang.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class Neo4jPropertiesHolder {
 
   private String driverType;
   private Config config;
+  private String uri;
   private String host;
   private String port;
   private String username;
@@ -34,6 +36,9 @@ public class Neo4jPropertiesHolder {
   }
 
   public String getUri() {
+    if (Strings.hasText(uri)) {
+      return uri;
+    }
     return MessageFormat.format(NEO4J_URI_TEMPLATE, host, port);
   }
 }

@@ -29,7 +29,7 @@ import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundExce
 @ConditionalOnProperty(name = "AWS_REGION")
 public class PostgresqlConnectionSettingsProviderImplAWSSecret
     implements PostgresqlConnectionSettingsProvider {
-  private static final String AWS_POSTGRESQL_SECRET_NAME_PARAM = "AWS_POSTGRESQL_SECRET_NAME_PARAM";
+  private static final String AWS_POSTGRESQL_SECRET_NAME = "AWS_POSTGRESQL_SECRET_NAME";
   private static final String AWS_REGION = "AWS_REGION";
 
   private final Environment environment;
@@ -60,7 +60,7 @@ public class PostgresqlConnectionSettingsProviderImplAWSSecret
   private String getSecretJson() {
     String secretName =
         assertRequiredEnvironmentParam(
-            AWS_POSTGRESQL_SECRET_NAME_PARAM, "AWS Secret Name for Postgresql is not defined");
+            AWS_POSTGRESQL_SECRET_NAME, "AWS Secret Name for Postgresql is not defined");
 
     try {
       GetSecretValueRequest getSecretValueRequest =

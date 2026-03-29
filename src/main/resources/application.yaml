@@ -67,6 +67,8 @@ jwt:
   access-token-expiration: 900000      # 15 minutes
   refresh-token-expiration: 604800000  # 7 days
   reset-token-expiration: 900000       # 15 minutes
+  # Move to aws secret
+  secret: 6b9c307c16b406bdec1358afb27560d1a9330dc1bf537efdf3b1788febd3221d
 
 aws:
   ses:

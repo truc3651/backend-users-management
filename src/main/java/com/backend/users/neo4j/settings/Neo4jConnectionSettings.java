@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class Neo4jConnectionSettings {
+  private String uri;
   private String host;
   private String port;
   private String username;

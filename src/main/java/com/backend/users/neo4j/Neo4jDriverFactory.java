@@ -22,6 +22,7 @@ public class Neo4jDriverFactory {
     Neo4jPropertiesHolder properties =
         Neo4jPropertiesHolder.builder()
             .config(commonConfig)
+            .uri(settings.getUri())
             .host(settings.getHost())
             .port(settings.getPort())
             .username(settings.getUsername())

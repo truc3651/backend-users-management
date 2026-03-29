@@ -29,7 +29,7 @@ import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundExce
 @Profile("!localdev & !test")
 public class Neo4jConnectionSettingsProviderImplAWSSecret
     implements Neo4jConnectionSettingsProvider {
-  private static final String AWS_NEO4J_SECRET_NAME_PARAM = "AWS_NEO4J_SECRET_NAME";
+  private static final String AWS_NEO4J_SECRET_NAME = "AWS_NEO4J_SECRET_NAME";
   private static final String AWS_REGION = "AWS_REGION";
 
   private final Environment environment;
@@ -60,7 +60,7 @@ public class Neo4jConnectionSettingsProviderImplAWSSecret
   private String getSecretJson() {
     String secretName =
         assertRequiredEnvironmentParam(
-            AWS_NEO4J_SECRET_NAME_PARAM, "AWS Neo4j Secret Name is not defined");
+            AWS_NEO4J_SECRET_NAME, "AWS Neo4j Secret Name is not defined");
 
     try {
       GetSecretValueRequest getSecretValueRequest =

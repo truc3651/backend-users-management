@@ -14,7 +14,7 @@ jobs:
       actions: read
       contents: read
     with:
-      service_name: 'backend-users-management'
+      service_name: 'backend-users'
     secrets:
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
       deployments_repo_token: ${{ secrets.DEPLOYMENTS_REPO_TOKEN }}
