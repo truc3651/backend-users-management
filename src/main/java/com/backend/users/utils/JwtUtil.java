@@ -1,6 +1,5 @@
 package com.backend.users.utils;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,19 +11,21 @@ import org.springframework.stereotype.Component;
 
 import com.backend.users.entities.UserEntity;
 import com.backend.users.enums.JwtPayloadFields;
+import com.backend.users.security.RsaKeyProperties;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import javax.crypto.SecretKey;
 
 @Component
 public class JwtUtil {
-  @Value("${jwt.secret}")
-  private String secret;
+  private final RsaKeyProperties rsaKeyProperties;
 
   @Value("${jwt.access-token-expiration}")
   private Long expiration;
+
+  public JwtUtil(RsaKeyProperties rsaKeyProperties) {
+    this.rsaKeyProperties = rsaKeyProperties;
+  }
 
   public String generateToken(UserEntity user) {
     Map<String, Object> claims = new HashMap<>();
@@ -46,7 +47,7 @@ public class JwtUtil {
         .subject(subject)
         .issuedAt(now)
         .expiration(expirationDate)
-        .signWith(getSigningKey())
+        .signWith(rsaKeyProperties.getPrivateKey())
         .compact();
   }
 
@@ -60,12 +61,11 @@ public class JwtUtil {
   }
 
   private Claims extractAllClaims(String token) {
-    return Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
-  }
-
-  private SecretKey getSigningKey() {
-    // SecretKey: secret string + algorithm depends on secret string length
-    return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    return Jwts.parser()
+        .verifyWith(rsaKeyProperties.getPublicKey())
+        .build()
+        .parseSignedClaims(token)
+        .getPayload();
   }
 
   public Map<String, Object> extractPayload(String token) {
