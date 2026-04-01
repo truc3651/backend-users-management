@@ -1,135 +1,128 @@
-## Why This Project Exists
+# backend-users
 
-Modern social platforms need a dedicated service to handle user identity and social graphs independently from other domains. This service owns the full lifecycle of user accounts (registration, login, password management) and all social relationships (friendships, follow/unfollow, block/unblock), publishing domain events via Kafka so other services can react without tight coupling.
+The **backend-users** service is the central identity and social-graph authority of the platform. It handles everything from authentication and session management to friend requests and user blocking. Other services trust this service as the source of truth for user identity, and they verify tokens using public keys this service exposes.
 
-## What It Does
+---
 
-- **Authentication** — Register, login, JWT-based access/refresh tokens, password reset via email
-- **User Profile** — Full name, profile picture, update profile
-- **Session Management** — Revoke all sessions across devices
-- **Friendships** — Send/accept/reject/cancel friend requests, list friends, friend suggestions
-- **Social Connections** — Follow/unfollow users, block/unblock users, paginated follower/following/blocked lists
-- **Event-Driven** — Publishes follow, unfollow, block, and unblock events to Kafka topics
-- **Emails** — Sends welcome and password-reset emails via AWS SES templates
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Framework | Spring Boot 3.4, WebFlux (reactive) |
-| Language | Java 17 |
-| Relational DB | PostgreSQL 16 (R2DBC for reactive, JDBC for Flyway migrations) |
-| Graph DB | Neo4j 5 (social graph — friendships, follows, blocks) |
-| Cache | Redis 7 (reactive, with TTL-based caching for users, friends, suggestions) |
-| Messaging | Apache Kafka (with Reactor Kafka for non-blocking produce) |
-| Auth | JWT (access + refresh + reset tokens) |
-| Email | AWS SES (templated emails) |
-| Secrets | AWS Secrets Manager (production DB/Kafka credentials) |
-| API Docs | SpringDoc OpenAPI 3 (Swagger UI) |
-| Build | Gradle |
-| Code Quality | Spotless (Google Java Format), Lombok, MapStruct |
-| Testing | JUnit 5, Testcontainers (PostgreSQL, Neo4j, Kafka, Redis, LocalStack) |
-
-## Prerequisites
-
-- Java 17+
-- Docker & Docker Compose
-
-## Getting Started
-
-### 1. Start infrastructure
-
-```bash
-docker-compose up -d
-```
-
-This starts PostgreSQL, Neo4j, Redis, Kafka (with Zookeeper), and LocalStack (SES).
-
-LocalStack automatically initializes SES with a verified sender email and email templates via `localstack/init/ses-init.sh`. No manual setup needed.
-
-### 2. Run the application
-
-```bash
-./gradlew bootRun --args='--spring.profiles.active=localdev'
-```
-
-The server starts on **http://localhost:8090**.
-
-### 3. Explore the API
-
-| URL | Description |
-|---|---|
-| http://localhost:8090/swagger-ui.html | Swagger UI (interactive API explorer) |
-| http://localhost:8090/v3/api-docs | OpenAPI 3.0 JSON specification |
-
-## API Overview
-
-### Auth (`/v1/api/auth`) — public, no token required
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/register` | Register a new user |
-| POST | `/login` | Login and receive JWT tokens |
-| POST | `/forgot-password` | Request a password reset email |
-| POST | `/reset-password` | Reset password with token |
-| POST | `/validate-token` | Validate a JWT token |
-| POST | `/refresh` | Refresh an access token |
-| POST | `/logout` | Logout (invalidate refresh token) |
-
-### User (`/v1/api/me`) — requires Bearer token
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/profile` | Get current user's profile |
-| PUT | `/profile` | Update full name and/or profile picture |
-| POST | `/change-password` | Change current user's password |
-| GET | `/sessions?currentRefreshToken=...` | List all active sessions (marks current) |
-| POST | `/sessions/revoke-others` | Revoke all sessions except current |
-| POST | `/sessions/revoke` | Revoke a specific session (not current) |
-
-### Friendships (`/v1/api/friendships`) — requires Bearer token
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/requests` | Send a friend request |
-| POST | `/requests/{id}/accept` | Accept a friend request |
-| POST | `/requests/{id}/reject` | Reject a friend request |
-| POST | `/requests/{id}/cancel` | Cancel a sent friend request |
-| GET | `/requests/pending` | List pending friend requests |
-| GET | `/requests/sent` | List sent friend requests |
-| GET | `/friends` | List friends |
-| GET | `/suggestions` | Get friend suggestions |
-
-### Social (`/v1/api/social`) — requires Bearer token
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/follow/{userId}` | Follow a user |
-| POST | `/unfollow/{userId}` | Unfollow a user |
-| GET | `/following` | List users you follow (paginated) |
-| GET | `/followers` | List your followers (paginated) |
-| POST | `/block/{userId}` | Block a user |
-| POST | `/unblock/{userId}` | Unblock a user |
-| GET | `/blocked` | List blocked users (paginated) |
-
-## Project Structure
+## Architecture Overview
 
 ```
-src/main/java/com/backend/users/
-├── controllers/          # REST controllers (Auth, User, Friendship, Social)
-├── services/             # Business logic
-├── repositories/         # R2DBC (PostgreSQL) + Neo4j repositories
-├── entities/             # PostgreSQL entities
-├── graph/                # Neo4j node and relationship models
-├── dtos/                 # Request/response DTOs
-├── enums/                # Enums (FriendRequestStatus, JwtPayloadFields)
-├── mappers/              # MapStruct mappers
-├── security/             # Spring Security config, JWT filter
-├── cache/                # Redis cache config and properties
-├── kafka/                # Kafka producer, event properties, health check
-├── ses/                  # AWS SES email service and config
-├── neo4j/                # Neo4j driver config, connection settings
-├── postgresql/           # R2DBC connection factory, read/write routing
-├── openapi/              # OpenAPI/Swagger configuration
-└── utils/                # JWT utilities, constants
+┌─────────────────────────────────────────────────────────────────┐
+│                        backend-users                            │
+│                                                                 │
+│  REST API                                                       │
+│       │                                                         │
+│       ▼                                                         │
+│  Service Layer  ──── backend-core (shared lib)                  │
+│       │                    └── CacheAside<K,V>                  │
+│       │                         ├── Redis (L1)                  │
+│       │                         └── PostgreSQL (truth)          │
+│       │                                                         │
+│       ├──── PostgreSQL (writes + authoritative reads)           │
+│       └──── Neo4j       (reads only — social graph queries)     │
+└─────────────────────────────────────────────────────────────────┘
+
+CDC Pipeline (separate concern):
+  PostgreSQL  ──► Debezium ──►  Kafka  ──►  backend-graph-projector  ──►  Neo4j
 ```
+
+The service never writes directly to Neo4j. Writes go to PostgreSQL atomically, and a Change Data Capture (CDC) pipeline propagates those changes to Neo4j via `backend-graph-projector`. This is a deliberate choice to preserve atomicity: a single PostgreSQL transaction can update both the relational row and emit a reliable, ordered event; trying to write to two different databases in one business operation opens the door to partial failure and split-brain state.
+
+---
+
+## Why PostgreSQL?
+
+**Why not a document store (MongoDB, DynamoDB)?** User identity data is highly relational: users have sessions, sessions belong to users, friend requests link two users, tokens reference users. A document store would force you to either embed and denormalize aggressively (leading to update anomalies). Relational integrity — foreign keys, cascade deletes, unique constraints — is genuinely valuable here and PostgreSQL enforces it at the database level.
+
+---
+
+## Database Schema
+
+PostgreSQL owns four tables.
+
+### `user`
+
+Stores core identity and profile information for each registered user.
+
+### `refreshToken`
+
+Tracks every issued refresh token, enabling per-device session listing and revocation.
+
+### `passwordResetToken`
+
+Short-lived single-use tokens for the forgot-password flow.
+
+### `friendRequest`
+
+Models the lifecycle of a friend request between two users.
+
+---
+
+## Neo4j — Read-Only Graph
+
+Neo4j holds the social graph as projected from PostgreSQL via CDC. This service **only reads** from Neo4j; it never writes to it directly.
+
+The graph contains the following relationship types:
+
+| Relationship | Direction | Meaning |
+|---|---|--|
+| `FOLLOWS` | `(a)-[:FOLLOWS]->(b)` |
+| `FOLLOWED` | mirror of FOLLOWS |
+| `BLOCKS` | `(a)-[:BLOCKS]->(b)` |
+
+---
+
+## Caching Strategy
+
+All cache logic lives in **`backend-core`**, the shared library, so every service gets the same battle-tested behaviour without copy-pasting.
+
+### Cache-Aside Pattern
+
+The service never writes to the cache directly on a miss. Instead, it follows a strict read-through discipline:
+
+1. Check Redis first.
+2. On a hit, return the cached value.
+3. On a miss, acquire a lock, load from PostgreSQL, populate the cache, release the lock.
+4. Cache operations are opportunistic. PostgreSQL is the truth.
+
+```
+Request
+   │
+   ▼
+Redis GET ──► HIT ──────────────────────────────► Return value
+   │                                                  │
+   └──► MISS                              (maybe trigger background refresh)
+           │
+           ▼
+       Redis SETNX "lock:{key}"
+           │
+     ┌─────┴──────┐
+   GOT LOCK    LOST LOCK
+     │              │
+     ▼              ▼
+  DB query      wait 100ms → Redis GET → HIT ? return : DB fallback
+     │
+     ▼
+  Redis SET (with jittered TTL)
+     │
+     ▼
+  Return value
+```
+
+### TTL Jitter (±15%)
+
+Every `put()` call randomizes the TTL within ±15% of the configured base TTL:
+
+**Why does this matter?** Imagine 10,000 user profile objects all cached at 09:00 with a 5-minute TTL. Without jitter, they all expire simultaneously at 09:05, causing a "thundering herd" — every concurrent request hits PostgreSQL at the same instant. With ±15% jitter, expiries are spread across a 90-second window, smoothing the load curve dramatically.
+
+### Probabilistic Early Refresh
+
+When a cache hit occurs within the last 10% of the key's remaining TTL, a linearly increasing probability triggers a **fire-and-forget background refresh** before the key expires naturally:
+
+This means popular keys are almost always refreshed before they expire, eliminating the latency spike that would otherwise occur on the cold miss.
+
+### Fire-and-Forget with `doOnSuccess`
+
+Cache writes in service code use `doOnSuccess` (reactive), ensuring the cache population happens **after** the database operation succeeds and **does not block** the response path:
+
+If the cache write fails, the user still gets their response. This is a deliberate design: the cache is an optimization, not a dependency.
