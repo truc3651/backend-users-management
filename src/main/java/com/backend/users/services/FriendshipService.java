@@ -200,4 +200,8 @@ public class FriendshipService {
   private Mono<Void> evictSuggestionsCaches(String userId1, String userId2) {
     return Mono.when(suggestionsCache.evict(userId1), suggestionsCache.evict(userId2));
   }
+
+  public Flux<String> getFriendIds(String userId) {
+    return getFriends(userId).map(ProfileResponseDto::getId);
+  }
 }

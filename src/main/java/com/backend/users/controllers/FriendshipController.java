@@ -3,6 +3,7 @@ package com.backend.users.controllers;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.backend.core.annotations.Anonymous;
 import com.backend.core.dtos.UserDto;
 import com.backend.users.dtos.PendingFriendRequestDto;
 import com.backend.users.dtos.ProfileResponseDto;
@@ -67,5 +68,11 @@ public class FriendshipController {
   public Flux<ProfileResponseDto> getFriendSuggestions(
       @AuthenticationPrincipal UserDto currentUser) {
     return friendshipService.getFriendSuggestions(currentUser.getId());
+  }
+
+  @Anonymous // only internal pod can reach
+  @GetMapping("/{userId}/friends")
+  public Flux<String> getFriendIds(@PathVariable String userId) {
+    return friendshipService.getFriendIds(userId);
   }
 }
